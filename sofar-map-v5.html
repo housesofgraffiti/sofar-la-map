@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sofar LA — Show & Venue Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0F0E0C; --surface: #1A1916; --surface2: #222018; --surface3: #2A2820;
+  --border: #2E2C28; --border2: #3A3830; --text: #F0EDE8; --muted: #7A7670; --faint: #3A3830;
+  --sidebar-w: 300px; --detail-w: 340px; --header-h: 52px;
+  --artist: #E8A830; --regular: #3ABFA0; --partnership: #E85C3A;
+  --pipeline: #7B9FE8; --outdoor: #90C96A; --hosted: #C46AE8;
+}
+html, body { height: 100%; overflow: hidden; }
+body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; font-size: 13px; }
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* ── LOADING SCREEN ── */
+#loading-screen {
+  position: fixed; inset: 0; background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; z-index: 1000;
+}
+.loading-logo { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 300; letter-spacing: -0.02em; }
+.loading-logo em { font-style: italic; color: var(--artist); }
+.loading-bar { width: 200px; height: 2px; background: var(--border); border-radius: 1px; overflow: hidden; }
+.loading-fill { height: 100%; background: var(--artist); width: 0; transition: width 0.4s ease; border-radius: 1px; }
+.loading-status { font-size: 11px; color: var(--muted); letter-spacing: 0.08em; }
+
+/* ── KEY SCREEN ── */
+#key-screen {
+  position: fixed; inset: 0; background: var(--bg);
+  display: none; align-items: center; justify-content: center; z-index: 999;
+}
+.key-box { width: 460px; padding: 48px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; }
+.key-logo { font-family: 'Fraunces', serif; font-size: 28px; font-weight: 300; letter-spacing: -0.02em; margin-bottom: 6px; }
+.key-logo em { font-style: italic; color: var(--artist); }
+.key-sub { font-size: 11px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 32px; }
+.key-label { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
+.key-input { width: 100%; background: var(--bg); border: 1px solid var(--border2); border-radius: 3px; padding: 10px 14px; font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text); outline: none; margin-bottom: 10px; transition: border-color 0.2s; }
+.key-input:focus { border-color: var(--artist); }
+.key-input::placeholder { color: var(--faint); }
+.key-btn { width: 100%; background: var(--artist); color: #0F0E0C; border: none; border-radius: 3px; padding: 11px; font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; margin-bottom: 8px; transition: opacity 0.2s; }
+.key-btn:hover { opacity: 0.85; }
+.key-btn-ghost { width: 100%; background: transparent; color: var(--muted); border: 1px solid var(--border2); border-radius: 3px; padding: 9px; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
+.key-btn-ghost:hover { color: var(--text); }
+.key-note { font-size: 11px; color: var(--muted); margin-top: 14px; line-height: 1.7; }
+.key-note a { color: var(--pipeline); text-decoration: none; }
+
+/* ── HEADER ── */
+#header {
+  position: fixed; top: 0; left: 0; right: 0; height: var(--header-h);
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 16px; gap: 14px; z-index: 100;
+}
+.logo { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 300; letter-spacing: -0.02em; white-space: nowrap; }
+.logo em { font-style: italic; color: var(--artist); }
+.hdiv { width: 1px; height: 20px; background: var(--border2); flex-shrink: 0; }
+.month-nav { display: flex; align-items: center; gap: 8px; }
+.mnbtn { background: none; border: 1px solid var(--border2); color: var(--muted); border-radius: 3px; width: 24px; height: 24px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.mnbtn:hover { border-color: var(--artist); color: var(--artist); }
+#month-label { font-size: 12px; color: var(--text); letter-spacing: 0.05em; min-width: 110px; text-align: center; }
+.view-toggle { display: flex; border: 1px solid var(--border2); border-radius: 3px; overflow: hidden; }
+.vbtn { background: none; border: none; padding: 5px 12px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); cursor: pointer; letter-spacing: 0.06em; text-transform: uppercase; transition: all 0.15s; }
+.vbtn.active { background: var(--artist); color: #0F0E0C; }
+.hright { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.hbtn { background: none; border: 1px solid var(--border2); color: var(--muted); border-radius: 3px; padding: 5px 12px; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.hbtn:hover { color: var(--text); border-color: var(--border2); }
+.hbtn.teal:hover { color: var(--regular); border-color: var(--regular); }
+.hbtn.amber:hover { color: var(--artist); border-color: var(--artist); }
+#sync-indicator { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+.sdot { width: 7px; height: 7px; border-radius: 50%; background: var(--regular); box-shadow: 0 0 5px var(--regular); flex-shrink: 0; }
+.sdot.syncing { background: var(--artist); box-shadow: 0 0 5px var(--artist); animation: pulse 1s infinite; }
+.sdot.error { background: var(--partnership); box-shadow: 0 0 5px var(--partnership); }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+/* ── LAYOUT ── */
+#app { display: none; height: 100%; padding-top: var(--header-h); }
+#layout { display: flex; height: 100%; }
+
+/* ── SIDEBAR ── */
+#sidebar { width: var(--sidebar-w); flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+.sb-sec { padding: 13px 15px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.sb-title { font-size: 10px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; }
+.layer-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
+.layer-left { display: flex; align-items: center; gap: 9px; }
+.ldot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.lname { font-size: 12px; color: var(--text); }
+.lcount { font-size: 10px; color: var(--muted); margin-left: 3px; }
+.toggle { position: relative; width: 30px; height: 17px; cursor: pointer; flex-shrink: 0; }
+.toggle input { display: none; }
+.ttrack { position: absolute; inset: 0; background: var(--faint); border-radius: 9px; transition: background 0.2s; }
+.toggle input:checked + .ttrack { background: var(--border2); }
+.tthumb { position: absolute; top: 3px; left: 3px; width: 11px; height: 11px; border-radius: 50%; background: var(--muted); transition: all 0.2s; pointer-events: none; }
+.toggle input:checked + .ttrack + .tthumb { left: 16px; background: var(--text); }
+.cap-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
+.cap-val { font-size: 12px; color: var(--text); }
+input[type="range"] { width: 100%; accent-color: var(--artist); height: 3px; }
+#item-list { flex: 1; overflow-y: auto; padding: 4px 0; }
+.list-gl { padding: 8px 15px 3px; font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+.list-item { padding: 9px 15px; cursor: pointer; border-left: 2px solid transparent; transition: all 0.12s; }
+.list-item:hover { background: var(--surface2); }
+.list-item.active { background: var(--surface2); }
+.li-name { font-size: 12px; color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
+.li-meta { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.badge { font-size: 9px; letter-spacing: 0.07em; text-transform: uppercase; padding: 1px 5px; border-radius: 2px; white-space: nowrap; }
+.li-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.list-empty { padding: 24px 15px; font-size: 12px; color: var(--muted); text-align: center; font-style: italic; }
+
+/* ── MAP ── */
+#map-wrap { flex: 1; position: relative; overflow: hidden; }
+#map { width: 100%; height: 100%; background: var(--bg); }
+
+/* ── LIST VIEW ── */
+#list-view { display: none; position: absolute; inset: 0; background: var(--bg); overflow-y: auto; padding: 20px; }
+#list-view.active { display: block; }
+.lv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.lv-card { background: var(--surface); border: 1px solid var(--border); border-left-width: 3px; border-radius: 4px; padding: 14px; cursor: pointer; transition: all 0.15s; }
+.lv-card:hover { background: var(--surface2); }
+.lv-name { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 600; margin-bottom: 4px; letter-spacing: -0.01em; }
+.lv-meta { display: flex; gap: 7px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+.lv-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.lv-fl { font-size: 9px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+.lv-fv { font-size: 12px; color: var(--text); }
+.lv-note { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted); font-style: italic; }
+
+/* ── DETAIL PANEL ── */
+#detail-panel { width: 0; overflow: hidden; background: var(--surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; transition: width 0.25s cubic-bezier(0.4,0,0.2,1); flex-shrink: 0; }
+#detail-panel.open { width: var(--detail-w); }
+.dp-inner { width: var(--detail-w); height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+.dp-head { padding: 16px 16px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.dp-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; float: right; transition: color 0.15s; }
+.dp-close:hover { color: var(--text); }
+.dp-type { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 5px; }
+.dp-name { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; line-height: 1.2; letter-spacing: -0.01em; margin-bottom: 3px; clear: both; }
+.dp-hood { font-size: 11px; color: var(--muted); }
+.dp-body { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+.dp-field { display: flex; flex-direction: column; gap: 3px; }
+.dp-fl { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+.dp-fv { font-size: 13px; color: var(--text); }
+.dp-divider { height: 1px; background: var(--border); }
+.dp-notes { width: 100%; min-height: 100px; background: var(--bg); border: 1px solid var(--border2); border-radius: 3px; padding: 9px 11px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); resize: vertical; outline: none; line-height: 1.6; transition: border-color 0.15s; }
+.dp-notes:focus { border-color: var(--artist); }
+.dp-notes::placeholder { color: var(--faint); }
+.dp-save { width: 100%; background: var(--surface2); border: 1px solid var(--border2); color: var(--muted); border-radius: 3px; padding: 7px; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; margin-top: 7px; transition: all 0.15s; }
+.dp-save:hover, .dp-save.saved { border-color: var(--regular); color: var(--regular); }
+.dp-live-badge { font-size: 10px; color: var(--regular); text-align: center; padding-top: 5px; }
+
+/* ── IMPORT MODAL ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; width: 100%; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; max-width: 600px; }
+.modal-head { padding: 20px 24px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; flex-shrink: 0; }
+.modal-title { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+.modal-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.modal-close { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; padding: 0 0 0 12px; transition: color 0.15s; }
+.modal-close:hover { color: var(--text); }
+.modal-body { padding: 20px 24px; flex: 1; overflow-y: auto; }
+.modal-footer { padding: 14px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0; }
+.btn { border-radius: 3px; padding: 8px 18px; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; border: none; }
+.btn-primary { background: var(--artist); color: #0F0E0C; }
+.btn-primary:hover { opacity: 0.85; }
+.btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border2); }
+.btn-ghost:hover { color: var(--text); }
+.import-tabs { display: flex; border-bottom: 1px solid var(--border); margin: -20px -24px 20px; }
+.itab { padding: 12px 18px; font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+.itab.active { color: var(--artist); border-bottom-color: var(--artist); }
+.itab-panel { display: none; }
+.itab-panel.active { display: block; }
+.form-label { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 7px; display: block; }
+.form-input { width: 100%; background: var(--bg); border: 1px solid var(--border2); border-radius: 3px; padding: 9px 12px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); outline: none; transition: border-color 0.15s; margin-bottom: 4px; }
+.form-input:focus { border-color: var(--artist); }
+.form-input::placeholder { color: var(--faint); }
+.form-textarea { width: 100%; min-height: 160px; background: var(--bg); border: 1px solid var(--border2); border-radius: 3px; padding: 9px 12px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); outline: none; resize: vertical; line-height: 1.6; transition: border-color 0.15s; }
+.form-textarea:focus { border-color: var(--artist); }
+.form-textarea::placeholder { color: var(--faint); }
+.form-hint { font-size: 11px; color: var(--muted); margin-top: 5px; line-height: 1.6; margin-bottom: 14px; }
+.form-select { width: 100%; background: var(--bg); border: 1px solid var(--border2); border-radius: 3px; padding: 8px 10px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); outline: none; cursor: pointer; margin-bottom: 12px; }
+.form-select:focus { border-color: var(--artist); }
+.col-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; margin-bottom: 7px; }
+.col-label { font-size: 11px; color: var(--text); }
+.col-arrow { font-size: 11px; color: var(--muted); text-align: center; }
+.col-select { background: var(--bg); border: 1px solid var(--border2); border-radius: 3px; padding: 5px 8px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text); outline: none; width: 100%; }
+.col-select:focus { border-color: var(--artist); }
+.preview-wrap { overflow-x: auto; margin-top: 10px; }
+.preview-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.preview-table th { background: var(--surface2); color: var(--muted); padding: 5px 8px; text-align: left; font-size: 9px; letter-spacing: 0.07em; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+.preview-table td { padding: 5px 8px; border-bottom: 1px solid var(--border); color: var(--text); white-space: nowrap; }
+.drop-zone { border: 2px dashed var(--border2); border-radius: 4px; padding: 32px; text-align: center; cursor: pointer; transition: all 0.15s; }
+.drop-zone:hover, .drop-zone.over { border-color: var(--artist); background: rgba(232,168,48,0.04); }
+.dz-icon { font-size: 26px; margin-bottom: 10px; opacity: 0.4; }
+.dz-text { font-size: 12px; color: var(--muted); line-height: 1.7; }
+.info-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 3px; padding: 12px 14px; font-size: 11px; color: var(--muted); line-height: 1.7; margin-bottom: 14px; }
+.info-box.amber { border-left: 3px solid var(--artist); }
+.info-box.teal { border-left: 3px solid var(--regular); }
+.info-box strong { color: var(--text); }
+
+/* ── TOAST ── */
+#toast { position: fixed; bottom: 20px; right: 20px; background: var(--surface); border: 1px solid var(--border2); border-radius: 4px; padding: 9px 14px; font-size: 12px; color: var(--regular); transform: translateY(50px); opacity: 0; transition: all 0.25s; z-index: 600; pointer-events: none; }
+#toast.show { transform: translateY(0); opacity: 1; }
+#toast.error { color: var(--partnership); }
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading-screen">
+  <div class="loading-logo">Sofar <em>LA</em></div>
+  <div class="loading-bar"><div class="loading-fill" id="loading-fill"></div></div>
+  <div class="loading-status" id="loading-status">Connecting to database...</div>
+</div>
+
+<!-- Maps API key hardcoded -->
+
+<!-- APP -->
+<div id="app">
+  <div id="header">
+    <div class="logo">Sofar <em>LA</em></div>
+    <div class="hdiv"></div>
+    <div class="month-nav">
+      <button class="mnbtn" onclick="changeMonth(-1)">‹</button>
+      <span id="month-label">March 2026</span>
+      <button class="mnbtn" onclick="changeMonth(1)">›</button>
+    </div>
+    <div class="hdiv"></div>
+    <div class="view-toggle">
+      <button class="vbtn active" id="btn-map" onclick="setView('map')">MAP</button>
+      <button class="vbtn" id="btn-list" onclick="setView('list')">LIST</button>
+    </div>
+    <div class="hright">
+      <button class="hbtn amber" onclick="openImport()">⇡ IMPORT</button>
+      <button class="hbtn teal" onclick="exportCSV()">↓ CSV</button>
+      <button class="hbtn" onclick="refreshData()">↺ SYNC</button>
+      <div id="sync-indicator">
+        <div class="sdot" id="sdot"></div>
+        <span id="sync-label">Live</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="layout">
+    <aside id="sidebar">
+      <div class="sb-sec">
+        <div class="sb-title">Layers</div>
+        <div id="layer-toggles"></div>
+      </div>
+      <div class="sb-sec">
+        <div class="sb-title">Capacity</div>
+        <div class="cap-row"><span style="font-size:12px;color:var(--text)">Min</span><span class="cap-val" id="capminv">0</span></div>
+        <input type="range" id="capmin" min="0" max="300" value="0" oninput="updateCap()">
+        <div class="cap-row" style="margin-top:9px"><span style="font-size:12px;color:var(--text)">Max</span><span class="cap-val" id="capmaxv">300+</span></div>
+        <input type="range" id="capmax" min="0" max="300" value="300" oninput="updateCap()">
+      </div>
+      <div id="item-list"></div>
+    </aside>
+
+    <div id="map-wrap">
+      <div id="map"></div>
+      <div id="list-view">
+        <div class="lv-grid" id="lv-grid"></div>
+      </div>
+    </div>
+
+    <aside id="detail-panel">
+      <div class="dp-inner">
+        <div class="dp-head">
+          <button class="dp-close" onclick="closeDetail()">×</button>
+          <div class="dp-type" id="d-type"></div>
+          <div class="dp-name" id="d-name"></div>
+          <div class="dp-hood" id="d-hood"></div>
+        </div>
+        <div class="dp-body">
+          <div class="dp-field"><div class="dp-fl">Date / Day</div><div class="dp-fv" id="d-date"></div></div>
+          <div class="dp-field"><div class="dp-fl">Area</div><div class="dp-fv" id="d-area"></div></div>
+          <div class="dp-field"><div class="dp-fl">Capacity</div><div class="dp-fv" id="d-cap"></div></div>
+          <div class="dp-field"><div class="dp-fl">Type / Format</div><div class="dp-fv" id="d-format"></div></div>
+          <div class="dp-field"><div class="dp-fl">Status</div><div class="dp-fv" id="d-status"></div></div>
+          <div class="dp-field" id="d-artist-wrap"><div class="dp-fl">Artist / Host</div><div class="dp-fv" id="d-artist"></div></div>
+          <div class="dp-field" id="d-lead-wrap"><div class="dp-fl">Show Lead</div><div class="dp-fv" id="d-lead"></div></div>
+          <div class="dp-divider"></div>
+          <div>
+            <div class="dp-fl" style="margin-bottom:7px">Notes</div>
+            <textarea class="dp-notes" id="d-notes" placeholder="Venue contact, logistics, ideas..."></textarea>
+            <button class="dp-save" id="save-btn" onclick="saveNote()">SAVE TO DATABASE</button>
+            <div class="dp-live-badge">✓ Saved notes sync to Supabase — visible to everyone</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- IMPORT MODAL -->
+<div class="modal-overlay" id="import-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Import Data</div>
+        <div class="modal-sub">Paste from Google Sheets or upload a CSV — saves directly to Supabase</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('import-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="import-tabs">
+        <div class="itab active" onclick="switchTab('paste')">PASTE FROM SHEETS</div>
+        <div class="itab" onclick="switchTab('upload')">UPLOAD CSV</div>
+        <div class="itab" onclick="switchTab('sync')">LIVE SYNC</div>
+      </div>
+
+      <div class="itab-panel active" id="tab-paste">
+        <div class="info-box amber">
+          <strong>From Google Sheets:</strong> Select rows (including header), Cmd/Ctrl+C, paste below.
+        </div>
+        <div class="form-label">Which table?</div>
+        <select class="form-select" id="paste-table">
+          <option value="2026_calendar">2026 Calendar / Schedule</option>
+          <option value="venue_list">Venue List</option>
+          <option value="artist_hosted">Artist-Hosted Tracker</option>
+        </select>
+        <label class="form-label">Paste data</label>
+        <textarea class="form-textarea" id="paste-input" placeholder="Date&#9;Day of Week&#9;Venue&#9;Neighborhood&#9;Type&#9;Area&#9;Show Lead&#10;3/5/2026&#9;Thursday&#9;The Andaz&#9;West Hollywood&#9;Artist Hosted&#9;Hollywood + WeHo&#9;Ben" oninput="parsePaste()"></textarea>
+        <div class="form-hint">Tab-separated. First row must be headers.</div>
+        <div id="paste-preview" style="display:none">
+          <div class="form-label" style="margin-top:8px">Column Mapping</div>
+          <div id="col-mapper"></div>
+          <div class="form-label" style="margin-top:12px">Preview</div>
+          <div class="preview-wrap"><table class="preview-table" id="preview-table"></table></div>
+        </div>
+      </div>
+
+      <div class="itab-panel" id="tab-upload">
+        <div class="form-label">Which table?</div>
+        <select class="form-select" id="upload-table">
+          <option value="2026_calendar">2026 Calendar / Schedule</option>
+          <option value="venue_list">Venue List</option>
+          <option value="artist_hosted">Artist-Hosted Tracker</option>
+        </select>
+        <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()" ondrop="handleDrop(event)" ondragover="e=>e.preventDefault()" ondragleave="document.getElementById('drop-zone').classList.remove('over')">
+          <div class="dz-icon">📄</div>
+          <div class="dz-text" id="dz-text">Drop CSV here or click to browse<br><span style="color:var(--faint)">Sheets → File → Download → CSV</span></div>
+        </div>
+        <input type="file" id="file-input" accept=".csv,.tsv" style="display:none" onchange="handleFile(event)">
+        <div id="upload-preview" style="display:none; margin-top:14px">
+          <div class="form-label">Column Mapping</div>
+          <div id="upload-col-mapper"></div>
+          <div class="preview-wrap"><table class="preview-table" id="upload-preview-table"></table></div>
+        </div>
+      </div>
+
+      <div class="itab-panel" id="tab-sync">
+        <div class="info-box teal">
+          <strong>How to get your sync URLs from Google Sheets:</strong><br>
+          1. Open your sheet → File → Share → Publish to web<br>
+          2. Select a tab (e.g. "2026 Calendar") → choose <strong>CSV</strong> format<br>
+          3. Click Publish → copy the URL → paste below<br>
+          4. Repeat for each tab. URLs are saved — map auto-fetches on every load.
+        </div>
+        <div class="form-group" style="margin-bottom:14px">
+          <label class="form-label">2026 Calendar / Schedule URL</label>
+          <input type="text" class="form-input" id="sync-cal-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv&gid=...">
+          <div class="form-hint">Maps to your 2026_calendar table in Supabase.</div>
+        </div>
+        <div class="form-group" style="margin-bottom:14px">
+          <label class="form-label">Venue List URL</label>
+          <input type="text" class="form-input" id="sync-venue-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv&gid=...">
+          <div class="form-hint">Maps to your venue_list table in Supabase.</div>
+        </div>
+        <div class="form-group" style="margin-bottom:14px">
+          <label class="form-label">Artist-Hosted Tracker URL</label>
+          <input type="text" class="form-input" id="sync-artist-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv&gid=...">
+          <div class="form-hint">Maps to your artist_hosted table in Supabase.</div>
+        </div>
+        <button class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="saveSyncUrls()">SAVE & TEST CONNECTIONS</button>
+        <div id="sync-results" style="display:none"></div>
+        <div class="info-box" style="margin-top:12px;font-size:10px">
+          <strong>Auto-sync behavior:</strong> Every time the map loads, it fetches fresh CSV data from these URLs, 
+          upserts into Supabase, then renders. Lucas updates the sheet → anyone opens the map → data is current. 
+          No manual import needed.
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('import-modal')">CANCEL</button>
+      <button class="btn btn-primary" id="import-confirm-btn" onclick="confirmImport()">IMPORT TO DATABASE</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// SUPABASE CONFIG
+// ═══════════════════════════════════════════════════
+const SUPABASE_URL = 'https://hbancnwohadueykjqmdv.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_6GdVvmpgtyaCuU7_k_D2QQ_a9ZPqp6L';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ═══════════════════════════════════════════════════
+// LAYER CONFIG
+// ═══════════════════════════════════════════════════
+const LAYERS = [
+  { id:'artist',      name:'Artist-Hosted',    color:'#E8A830' },
+  { id:'regular',     name:'Regular Show',     color:'#3ABFA0' },
+  { id:'partnership', name:'Partnership',      color:'#E85C3A' },
+  { id:'pipeline',    name:'Pipeline Venue',   color:'#7B9FE8' },
+  { id:'outdoor',     name:'Summer/Outdoor',   color:'#90C96A' },
+  { id:'hosted',      name:'Artist Tracker',   color:'#C46AE8' },
+];
+
+const TYPE_MAP = {
+  'artist hosted': 'artist', 'artist-hosted': 'artist', 'discovery': 'regular',
+  'regular': 'regular', 'private / partnership': 'partnership', 'partnership': 'partnership',
+  'private/partnership': 'partnership', 'pipeline': 'pipeline', 'outdoor': 'outdoor',
+};
+
+function resolveType(raw) {
+  if (!raw) return 'pipeline';
+  const n = raw.toLowerCase().trim();
+  return TYPE_MAP[n] || 'pipeline';
+}
+
+// ═══════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════
+let DATA = [];
+let currentMonth = '2026-03';
+let currentView = 'map';
+let selectedId = null;
+let map = null;
+let markers = {};
+let layerVisible = {};
+let capMin = 0, capMax = 300;
+let mapEnabled = false;
+let parsedRows = [], parsedHeaders = [], colMap = {}, importActive = 'paste';
+
+LAYERS.forEach(l => layerVisible[l.id] = true);
+
+// ═══════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════
+async function boot() {
+  setLoading('Connecting to database...', 10);
+  try {
+    await autoSyncOnLoad();
+    await loadAllData();
+    setLoading('Data loaded', 80);
+    setLoading('Ready', 100);
+    setTimeout(() => {
+      document.getElementById('loading-screen').style.display = 'none';
+      mapEnabled = true;
+      document.getElementById('app').style.display = 'block';
+      loadMapsAPI('AIzaSyA6OtNfq7KUOG98lO6YEWe1EpLVdqgC_oo');
+    }, 400);
+  } catch(e) {
+    setLoading('Connection error — check Supabase config', 100);
+    document.getElementById('loading-status').style.color = '#E85C3A';
+    console.error(e);
+    // Still launch app even if DB fails
+    setTimeout(() => {
+      document.getElementById('loading-screen').style.display = 'none';
+      mapEnabled = true;
+      document.getElementById('app').style.display = 'block';
+      loadMapsAPI('AIzaSyA6OtNfq7KUOG98lO6YEWe1EpLVdqgC_oo');
+    }, 1500);
+  }
+}
+
+function setLoading(msg, pct) {
+  document.getElementById('loading-status').textContent = msg;
+  document.getElementById('loading-fill').style.width = pct + '%';
+}
+
+// ═══════════════════════════════════════════════════
+// DATA LOADING FROM SUPABASE
+// ═══════════════════════════════════════════════════
+async function loadAllData() {
+  setSyncState('syncing', 'Syncing...');
+  const [schedRes, venRes, artRes] = await Promise.all([
+    sb.from('2026_calendar').select('*'),
+    sb.from('venue_list').select('*'),
+    sb.from('artist_hosted').select('*'),
+  ]);
+
+  DATA = [];
+
+  // Schedule rows
+  if (schedRes.data) {
+    schedRes.data.forEach((row, i) => {
+      const month = parseMonthFromDate(row.date);
+      DATA.push({
+        id: 'sch-' + row.id,
+        db_id: row.id,
+        table: '2026_calendar',
+        month,
+        type: resolveType(row.type),
+        name: row.venue || row.venue_name || '–',
+        neighborhood: row.neighborhood || '–',
+        area: row.area || '–',
+        lat: parseFloat(row.lat) || geoEstimate(row.area, i).lat,
+        lng: parseFloat(row.lng) || geoEstimate(row.area, i).lng,
+        date: formatDate(row.date),
+        day: row.day_of_week || row.day || '',
+        cap: parseInt(row.capacity) || 0,
+        format: row.type || '–',
+        status: row.status || 'Scheduled',
+        artist: row.artist || '',
+        lead: row.show_lead || '',
+        notes: row.notes || '',
+      });
+    });
+  }
+
+  // Venue rows
+  if (venRes.data) {
+    venRes.data.forEach((row, i) => {
+      DATA.push({
+        id: 'ven-' + row.id,
+        db_id: row.id,
+        table: 'venue_list',
+        month: 'all',
+        type: 'pipeline',
+        name: row.venue_name || '–',
+        neighborhood: row.neighborhood || '–',
+        area: row.area || '–',
+        lat: parseFloat(row.lat) || geoEstimate(row.area, i + 50).lat,
+        lng: parseFloat(row.lng) || geoEstimate(row.area, i + 50).lng,
+        date: '–',
+        day: '',
+        cap: parseInt(row.capacity) || 0,
+        format: row.byod_bar ? `Venue · ${row.byod_bar}` : 'Pipeline Venue',
+        status: row.status || 'Active',
+        artist: '',
+        lead: '',
+        notes: row.notes || '',
+      });
+    });
+  }
+
+  // Artist hosted rows
+  if (artRes.data) {
+    artRes.data.forEach((row, i) => {
+      const month = parseMonthFromDate(row.date);
+      DATA.push({
+        id: 'art-' + row.id,
+        db_id: row.id,
+        table: 'artist_hosted',
+        month,
+        type: 'hosted',
+        name: row.headliner || row.artist_name || '–',
+        neighborhood: row.neighborhood || '–',
+        area: row.area || '–',
+        lat: parseFloat(row.lat) || geoEstimate(row.area, i + 100).lat,
+        lng: parseFloat(row.lng) || geoEstimate(row.area, i + 100).lng,
+        date: formatDate(row.date),
+        day: row.day || '',
+        cap: parseInt(row.capacity) || 0,
+        format: 'Artist-Hosted',
+        status: row.venue_status || '–',
+        artist: row.headliner || '',
+        lead: '',
+        notes: row.notes || '',
+      });
+    });
+  }
+
+  setSyncState('ok', 'Live');
+}
+
+// Rough coordinate estimates by LA area for venues without lat/lng
+function geoEstimate(area, seed) {
+  const areas = {
+    'eastside': { lat: 34.075, lng: -118.215 },
+    'central la': { lat: 34.055, lng: -118.295 },
+    'westside': { lat: 34.020, lng: -118.440 },
+    'downtown': { lat: 34.045, lng: -118.255 },
+    'hollywood + weho': { lat: 34.090, lng: -118.360 },
+    'west hollywood': { lat: 34.090, lng: -118.360 },
+    'silver lake': { lat: 34.088, lng: -118.270 },
+    'echo park': { lat: 34.077, lng: -118.258 },
+    'culver city': { lat: 34.022, lng: -118.397 },
+    'arts district': { lat: 34.040, lng: -118.230 },
+    'koreatown': { lat: 34.058, lng: -118.300 },
+    'outer la': { lat: 34.020, lng: -118.480 },
+    'orange county': { lat: 33.750, lng: -117.870 },
+  };
+  const key = (area || '').toLowerCase();
+  const base = areas[key] || { lat: 34.052, lng: -118.280 };
+  const jitter = ((seed * 137.508) % 1) * 0.015 - 0.0075;
+  return { lat: base.lat + jitter, lng: base.lng + jitter * 1.5 };
+}
+
+function parseMonthFromDate(d) {
+  if (!d) return currentMonth;
+  const date = new Date(d);
+  if (isNaN(date)) return currentMonth;
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}`;
+}
+
+function formatDate(d) {
+  if (!d) return '–';
+  const date = new Date(d);
+  if (isNaN(date)) return d;
+  return date.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric', year:'numeric'});
+}
+
+// ═══════════════════════════════════════════════════
+// MAP LAUNCH
+// ═══════════════════════════════════════════════════
+function launchWithMap() {
+  const key = document.getElementById('api-key-input').value.trim();
+  if (!key) { alert('Please enter a Google Maps API key.'); return; }
+  localStorage.setItem('sofar-maps-key', key);
+  mapEnabled = true;
+  document.getElementById('key-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  loadMapsAPI(key);
+}
+
+function launchListOnly() {
+  mapEnabled = false;
+  document.getElementById('key-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('btn-map').style.display = 'none';
+  setView('list');
+  renderAll();
+}
+
+function loadMapsAPI(key) {
+  const s = document.createElement('script');
+  s.src = `https://maps.googleapis.com/maps/api/js?key=${key}&callback=initMap`;
+  s.async = true;
+  s.onerror = () => { showToast('Maps API failed — switching to list view', true); setView('list'); };
+  document.head.appendChild(s);
+}
+
+window.initMap = function() {
+  const dark = [
+    {elementType:'geometry',stylers:[{color:'#1a1916'}]},
+    {elementType:'labels.text.stroke',stylers:[{color:'#1a1916'}]},
+    {elementType:'labels.text.fill',stylers:[{color:'#6a6660'}]},
+    {featureType:'administrative.locality',elementType:'labels.text.fill',stylers:[{color:'#c4b5a5'}]},
+    {featureType:'poi',stylers:[{visibility:'off'}]},
+    {featureType:'road',elementType:'geometry',stylers:[{color:'#2a2820'}]},
+    {featureType:'road',elementType:'labels.text.fill',stylers:[{color:'#8a8278'}]},
+    {featureType:'road.highway',elementType:'geometry',stylers:[{color:'#353228'}]},
+    {featureType:'transit',stylers:[{visibility:'off'}]},
+    {featureType:'water',elementType:'geometry',stylers:[{color:'#0d0c0a'}]},
+  ];
+  map = new google.maps.Map(document.getElementById('map'), {
+    center:{lat:34.0522,lng:-118.2800}, zoom:11, styles:dark,
+    disableDefaultUI:true, zoomControl:true,
+    zoomControlOptions:{position:google.maps.ControlPosition.RIGHT_BOTTOM}
+  });
+  renderAll();
+};
+
+// ═══════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════
+function getColor(type) { return (LAYERS.find(l=>l.id===type)||{}).color || '#888'; }
+function getLabel(type) { return (LAYERS.find(l=>l.id===type)||{}).name || type; }
+
+function getFiltered() {
+  return DATA.filter(item => {
+    const monthOk = item.month === 'all' || item.month === currentMonth;
+    const layerOk = layerVisible[item.type] !== false;
+    const capOk = !item.cap || (item.cap >= capMin && item.cap <= capMax);
+    return monthOk && layerOk && capOk;
+  });
+}
+
+function renderAll() {
+  clearMarkers();
+  const data = getFiltered();
+  if (mapEnabled && map) data.forEach(createMarker);
+  renderLayerToggles();
+  renderSidebar(data);
+  renderListView(data);
+}
+
+function clearMarkers() {
+  Object.values(markers).forEach(m => m.setMap && m.setMap(null));
+  markers = {};
+}
+
+function createMarker(item) {
+  if (!map) return;
+  const color = getColor(item.type);
+  const isShow = !['pipeline','outdoor'].includes(item.type);
+  const label = isShow && item.date !== '–' ? (item.date.split(' ')[2] || '') : '';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44">
+    <ellipse cx="18" cy="42" rx="6" ry="2" fill="rgba(0,0,0,0.3)"/>
+    <path d="M18 0C8 0 0 8 0 18C0 30 18 44 18 44S36 30 36 18C36 8 28 0 18 0Z" fill="${color}"/>
+    <circle cx="18" cy="18" r="11" fill="rgba(0,0,0,0.25)"/>
+    ${label ? `<text x="18" y="23" text-anchor="middle" font-family="monospace" font-size="9" font-weight="bold" fill="#fff">${label}</text>` : `<circle cx="18" cy="18" r="4" fill="rgba(255,255,255,0.5)"/>`}
+  </svg>`;
+  const marker = new google.maps.Marker({
+    position:{lat:item.lat,lng:item.lng}, map,
+    icon:{ url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg), scaledSize:new google.maps.Size(28,34), anchor:new google.maps.Point(14,34) },
+    title: item.name, zIndex: isShow ? 10 : 5
+  });
+  marker.addListener('click', () => selectItem(item.id));
+  markers[item.id] = marker;
+}
+
+function renderLayerToggles() {
+  const counts = {};
+  DATA.forEach(d => { if (d.month==='all'||d.month===currentMonth) counts[d.type]=(counts[d.type]||0)+1; });
+  document.getElementById('layer-toggles').innerHTML = LAYERS.map(l => `
+    <div class="layer-row">
+      <div class="layer-left">
+        <div class="ldot" style="background:${l.color}"></div>
+        <span class="lname">${l.name}</span>
+        <span class="lcount">(${counts[l.id]||0})</span>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" ${layerVisible[l.id]!==false?'checked':''} onchange="toggleLayer('${l.id}',this.checked)">
+        <div class="ttrack"></div><div class="tthumb"></div>
+      </label>
+    </div>`).join('');
+}
+
+function renderSidebar(data) {
+  const shows = data.filter(d=>!['pipeline','outdoor'].includes(d.type)).sort((a,b)=>a.date.localeCompare(b.date));
+  const venues = data.filter(d=>['pipeline','outdoor'].includes(d.type)).sort((a,b)=>a.neighborhood.localeCompare(b.neighborhood));
+  let html = '';
+  if (shows.length) {
+    html += `<div class="list-gl">Shows (${shows.length})</div>`;
+    shows.forEach(item => html += listItemHTML(item));
+  }
+  if (venues.length) {
+    html += `<div class="list-gl">Venues (${venues.length})</div>`;
+    venues.forEach(item => html += listItemHTML(item));
+  }
+  if (!html) html = '<div class="list-empty">Nothing matches filters.</div>';
+  document.getElementById('item-list').innerHTML = html;
+}
+
+function listItemHTML(item) {
+  const color = getColor(item.type);
+  const active = selectedId === item.id;
+  return `<div class="list-item ${active?'active':''}" style="border-left-color:${active?color:'transparent'}" onclick="selectItem('${item.id}')">
+    <div class="li-name">${item.name}</div>
+    <div class="li-meta">
+      <span class="badge" style="background:${color}22;color:${color}">${getLabel(item.type)}</span>
+      ${item.date!=='–'?`<span style="font-size:11px;color:var(--muted)">${item.date}</span>`:''}
+    </div>
+    <div class="li-sub">${item.neighborhood}${item.area&&item.area!==item.neighborhood?' · '+item.area:''}${item.cap?' · '+item.cap+' cap':''}</div>
+  </div>`;
+}
+
+function renderListView(data) {
+  const sorted = [...data].sort((a,b)=>a.date.localeCompare(b.date));
+  document.getElementById('lv-grid').innerHTML = sorted.length ? sorted.map(item => {
+    const color = getColor(item.type);
+    return `<div class="lv-card" style="border-left-color:${color}" onclick="selectItem('${item.id}')">
+      <div class="lv-name">${item.name}</div>
+      <div class="lv-meta">
+        <span class="badge" style="background:${color}22;color:${color}">${getLabel(item.type)}</span>
+        ${item.date!=='–'?`<span style="font-size:11px;color:var(--muted)">${item.date}</span>`:''}
+      </div>
+      <div class="lv-fields">
+        <div><div class="lv-fl">Area</div><div class="lv-fv">${item.area||item.neighborhood}</div></div>
+        <div><div class="lv-fl">Capacity</div><div class="lv-fv">${item.cap||'–'}</div></div>
+        <div><div class="lv-fl">Format</div><div class="lv-fv">${item.format}</div></div>
+        <div><div class="lv-fl">Status</div><div class="lv-fv">${item.status}</div></div>
+      </div>
+      ${item.notes?`<div class="lv-note">${item.notes.substring(0,80)}${item.notes.length>80?'…':''}</div>`:''}
+    </div>`;
+  }).join('') : '<div class="list-empty">Nothing matches.</div>';
+}
+
+// ═══════════════════════════════════════════════════
+// INTERACTIONS
+// ═══════════════════════════════════════════════════
+function selectItem(id) {
+  selectedId = id;
+  const item = DATA.find(i=>i.id===id);
+  if (!item) return;
+  if (map && markers[id]) map.panTo({lat:item.lat, lng:item.lng});
+  document.getElementById('detail-panel').classList.add('open');
+  const color = getColor(item.type);
+  document.getElementById('d-type').textContent = getLabel(item.type);
+  document.getElementById('d-type').style.color = color;
+  document.getElementById('d-name').textContent = item.name;
+  document.getElementById('d-hood').textContent = item.neighborhood;
+  document.getElementById('d-date').textContent = item.date !== '–' ? `${item.date}${item.day?' ('+item.day+')':''}` : '–';
+  document.getElementById('d-area').textContent = item.area || '–';
+  document.getElementById('d-cap').textContent = item.cap ? `${item.cap} guests` : '–';
+  document.getElementById('d-format').textContent = item.format;
+  document.getElementById('d-status').textContent = item.status;
+  const aw = document.getElementById('d-artist-wrap');
+  aw.style.display = item.artist ? '' : 'none';
+  document.getElementById('d-artist').textContent = item.artist || '';
+  const lw = document.getElementById('d-lead-wrap');
+  lw.style.display = item.lead ? '' : 'none';
+  document.getElementById('d-lead').textContent = item.lead || '';
+  document.getElementById('d-notes').value = item.notes || '';
+  const btn = document.getElementById('save-btn');
+  btn.classList.remove('saved'); btn.textContent = 'SAVE TO DATABASE';
+  renderSidebar(getFiltered());
+}
+
+function closeDetail() {
+  document.getElementById('detail-panel').classList.remove('open');
+  selectedId = null;
+  renderSidebar(getFiltered());
+}
+
+function toggleLayer(type, visible) {
+  layerVisible[type] = visible;
+  Object.entries(markers).forEach(([id, m]) => {
+    const item = DATA.find(i=>i.id===id);
+    if (item && item.type===type) m.setVisible && m.setVisible(visible);
+  });
+  renderSidebar(getFiltered());
+}
+
+function updateCap() {
+  capMin = parseInt(document.getElementById('capmin').value);
+  capMax = parseInt(document.getElementById('capmax').value);
+  document.getElementById('capminv').textContent = capMin;
+  document.getElementById('capmaxv').textContent = capMax >= 300 ? '300+' : capMax;
+  renderAll();
+}
+
+function changeMonth(dir) {
+  const [y,m] = currentMonth.split('-').map(Number);
+  const d = new Date(y, m-1+dir, 1);
+  currentMonth = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('month-label').textContent = d.toLocaleString('default',{month:'long',year:'numeric'});
+  renderAll();
+}
+
+function setView(v) {
+  currentView = v;
+  document.getElementById('btn-map').classList.toggle('active', v==='map');
+  document.getElementById('btn-list').classList.toggle('active', v==='list');
+  document.getElementById('list-view').classList.toggle('active', v==='list');
+}
+
+async function refreshData() {
+  await loadAllData();
+  renderAll();
+  showToast('Synced with database');
+}
+
+// ═══════════════════════════════════════════════════
+// SAVE NOTES TO SUPABASE
+// ═══════════════════════════════════════════════════
+async function saveNote() {
+  if (!selectedId) return;
+  const item = DATA.find(i=>i.id===selectedId);
+  if (!item) return;
+  const notes = document.getElementById('d-notes').value;
+  const btn = document.getElementById('save-btn');
+  btn.textContent = 'SAVING...';
+  const { error } = await sb.from(item.table).update({ notes }).eq('id', item.db_id);
+  if (error) {
+    showToast('Save failed: ' + error.message, true);
+    btn.textContent = 'SAVE TO DATABASE';
+  } else {
+    item.notes = notes;
+    btn.textContent = '✓ SAVED'; btn.classList.add('saved');
+    setTimeout(() => { btn.textContent = 'SAVE TO DATABASE'; btn.classList.remove('saved'); }, 2500);
+    showToast('Note saved to database');
+    renderSidebar(getFiltered());
+    renderListView(getFiltered());
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// IMPORT
+// ═══════════════════════════════════════════════════
+const SCHEDULE_FIELDS = [
+  { key:'date', label:'Date', required:true },
+  { key:'day_of_week', label:'Day of Week' },
+  { key:'venue', label:'Venue Name', required:true },
+  { key:'neighborhood', label:'Neighborhood' },
+  { key:'type', label:'Type (Artist Hosted / Discovery etc.)' },
+  { key:'area', label:'Area' },
+  { key:'show_lead', label:'Show Lead' },
+  { key:'notes', label:'Notes' },
+];
+const VENUE_FIELDS = [
+  { key:'venue_name', label:'Venue Name', required:true },
+  { key:'neighborhood', label:'Neighborhood' },
+  { key:'area', label:'Area' },
+  { key:'capacity', label:'Capacity' },
+  { key:'byod_bar', label:'BYOB or Bar' },
+  { key:'notes', label:'Notes' },
+];
+const ARTIST_FIELDS = [
+  { key:'date', label:'Date' },
+  { key:'day', label:'Day' },
+  { key:'headliner', label:'Headliner', required:true },
+  { key:'venue_status', label:'Venue Status' },
+  { key:'venue_booked', label:'Venue Booked' },
+  { key:'opener_1', label:'Opener 1' },
+  { key:'opener_2', label:'Opener 2' },
+  { key:'venue_ideas', label:'Venue Ideas' },
+  { key:'notes', label:'Notes' },
+];
+
+function getFields(table) {
+  if (table==='venues') return VENUE_FIELDS;
+  if (table==='artist_hosted') return ARTIST_FIELDS;
+  return SCHEDULE_FIELDS;
+}
+
+function parseCSV(text) {
+  return text.trim().split('\n').map(line => {
+    if (!line.includes('"')) return line.split(/,|\t/).map(c=>c.trim());
+    const res=[]; let cur='', inQ=false;
+    for (const c of line) {
+      if (c==='"') inQ=!inQ;
+      else if ((c===','||c==='\t')&&!inQ) { res.push(cur.trim()); cur=''; }
+      else cur+=c;
+    }
+    res.push(cur.trim()); return res;
+  });
+}
+
+function autoMap(headers, fields) {
+  const m = {};
+  const n = s => s.toLowerCase().replace(/[^a-z0-9]/g,'');
+  fields.forEach(f => {
+    const idx = headers.findIndex(h => {
+      const hn = n(h);
+      if (f.key==='date') return hn==='date'||hn.includes('showdate');
+      if (f.key==='day_of_week'||f.key==='day') return hn.includes('day');
+      if (f.key==='venue'||f.key==='venue_name') return hn.includes('venue')||hn.includes('name');
+      if (f.key==='neighborhood') return hn.includes('neighbor')||hn.includes('hood');
+      if (f.key==='type') return hn==='type'||hn==='showtype';
+      if (f.key==='area') return hn==='area';
+      if (f.key==='show_lead') return hn.includes('lead');
+      if (f.key==='capacity') return hn.includes('cap');
+      if (f.key==='byod_bar') return hn.includes('byob')||hn.includes('bar');
+      if (f.key==='headliner') return hn.includes('head')||hn.includes('artist');
+      if (f.key==='venue_status') return hn.includes('status');
+      if (f.key==='venue_booked') return hn.includes('booked');
+      if (f.key==='opener_1') return hn==='opener1'||hn==='opener';
+      if (f.key==='opener_2') return hn==='opener2';
+      if (f.key==='venue_ideas') return hn.includes('idea');
+      if (f.key==='notes') return hn==='notes'||hn.includes('note');
+      return false;
+    });
+    if (idx>=0) m[f.key]=idx;
+  });
+  return m;
+}
+
+function renderColMapper(headers, fields, containerId) {
+  colMap = autoMap(headers, fields);
+  const opts = ['(skip)', ...headers].map((h,i)=>`<option value="${i-1}">${h}</option>`).join('');
+  document.getElementById(containerId).innerHTML = fields.map(f=>`
+    <div class="col-grid">
+      <div class="col-label">${f.label}${f.required?'<span style="color:var(--partnership)"> *</span>':''}</div>
+      <div class="col-arrow">→</div>
+      <select class="col-select" data-field="${f.key}" onchange="colMap['${f.key}']=parseInt(this.value)">
+        ${['(skip)', ...headers].map((h,i)=>`<option value="${i-1}" ${colMap[f.key]===i-1?'selected':''}>${h}</option>`).join('')}
+      </select>
+    </div>`).join('');
+}
+
+function renderPreview(rows, headers, tableId) {
+  document.getElementById(tableId).innerHTML = `
+    <thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+    <tbody>${rows.slice(0,3).map(r=>`<tr>${r.map(c=>`<td>${c||''}</td>`).join('')}</tr>`).join('')}</tbody>`;
+}
+
+function parsePaste() {
+  const raw = document.getElementById('paste-input').value;
+  if (!raw.trim()) { document.getElementById('paste-preview').style.display='none'; return; }
+  const rows = parseCSV(raw);
+  if (rows.length < 2) return;
+  parsedHeaders = rows[0];
+  parsedRows = rows.slice(1).filter(r=>r.some(c=>c));
+  const table = document.getElementById('paste-table').value;
+  document.getElementById('paste-preview').style.display='block';
+  renderColMapper(parsedHeaders, getFields(table), 'col-mapper');
+  renderPreview(parsedRows, parsedHeaders, 'preview-table');
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('over');
+  if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
+}
+
+function handleFile(e) { if (e.target.files[0]) processFile(e.target.files[0]); }
+
+function processFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const rows = parseCSV(e.target.result);
+    if (rows.length < 2) return;
+    parsedHeaders = rows[0];
+    parsedRows = rows.slice(1).filter(r=>r.some(c=>c));
+    const table = document.getElementById('upload-table').value;
+    document.getElementById('upload-preview').style.display = 'block';
+    renderColMapper(parsedHeaders, getFields(table), 'upload-col-mapper');
+    renderPreview(parsedRows, parsedHeaders, 'upload-preview-table');
+    document.getElementById('dz-text').textContent = `✓ ${file.name} — ${parsedRows.length} rows`;
+  };
+  reader.readAsText(file);
+}
+
+async function confirmImport() {
+  if (!parsedRows.length) { showToast('No data to import', true); return; }
+  // Sync colMap from selects
+  document.querySelectorAll('[data-field]').forEach(sel => {
+    const v = parseInt(sel.value);
+    if (!isNaN(v) && v >= 0) colMap[sel.dataset.field] = v;
+  });
+  const table = importActive === 'paste'
+    ? document.getElementById('paste-table').value
+    : document.getElementById('upload-table').value;
+  const fields = getFields(table);
+  const get = (row, key) => colMap[key]>=0 ? (row[colMap[key]]||'').trim() : '';
+  const records = parsedRows.map(row => {
+    const rec = {};
+    fields.forEach(f => { const v = get(row, f.key); if (v) rec[f.key] = v; });
+    return rec;
+  }).filter(r => Object.keys(r).length > 0);
+
+  if (!records.length) { showToast('No valid rows found', true); return; }
+  setSyncState('syncing', 'Importing...');
+  const { error } = await sb.from(table).insert(records);
+  if (error) {
+    showToast('Import failed: ' + error.message, true);
+    setSyncState('error', 'Error');
+  } else {
+    closeModal('import-modal');
+    showToast(`Imported ${records.length} rows to ${table}`);
+    await loadAllData();
+    renderAll();
+    parsedRows = []; parsedHeaders = [];
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════════
+function exportCSV() {
+  const data = getFiltered();
+  const headers = ['Type','Name','Neighborhood','Area','Date','Day','Capacity','Format','Status','Artist','Lead','Notes'];
+  const rows = data.map(d => [
+    getLabel(d.type), `"${d.name}"`, `"${d.neighborhood}"`, `"${d.area}"`,
+    d.date, d.day, d.cap, `"${d.format}"`, `"${d.status}"`,
+    `"${d.artist||''}"`, `"${d.lead||''}"`, `"${(d.notes||'').replace(/"/g,'""')}"`
+  ].join(','));
+  const blob = new Blob([[headers.join(','),...rows].join('\n')], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `sofar-la-${currentMonth}.csv`; a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('CSV exported');
+}
+
+// ═══════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════
+function setSyncState(state, label) {
+  const dot = document.getElementById('sdot');
+  const lbl = document.getElementById('sync-label');
+  dot.className = 'sdot' + (state==='syncing'?' syncing':state==='error'?' error':'');
+  lbl.textContent = label;
+}
+
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = (isError ? '✗ ' : '✓ ') + msg;
+  t.className = 'show' + (isError ? ' error' : '');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.className = '', 2500);
+}
+
+function openImport() {
+  parsedRows=[]; parsedHeaders=[];
+  document.getElementById('paste-input').value='';
+  document.getElementById('paste-preview').style.display='none';
+  document.getElementById('upload-preview').style.display='none';
+  document.getElementById('dz-text').innerHTML='Drop CSV here or click to browse<br><span style="color:var(--faint)">Sheets → File → Download → CSV</span>';
+  // Restore saved sync URLs
+  const urls = getSyncUrls();
+  if (document.getElementById('sync-cal-url')) document.getElementById('sync-cal-url').value = urls.calendar || '';
+  if (document.getElementById('sync-venue-url')) document.getElementById('sync-venue-url').value = urls.venue || '';
+  if (document.getElementById('sync-artist-url')) document.getElementById('sync-artist-url').value = urls.artist || '';
+  document.getElementById('sync-results').style.display = 'none';
+  const btn = document.getElementById('import-confirm-btn');
+  if (btn) btn.style.display = '';
+  openModal('import-modal');
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function switchTab(tab) {
+  importActive = tab;
+  document.querySelectorAll('.itab').forEach((t,i)=>t.classList.toggle('active',['paste','upload','sync'][i]===tab));
+  document.querySelectorAll('.itab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  const btn = document.getElementById('import-confirm-btn');
+  if (btn) btn.style.display = tab === 'sync' ? 'none' : '';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key==='Escape') { closeModal('import-modal'); closeDetail(); }
+});
+
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target===o) o.classList.remove('open'); });
+});
+
+// ═══════════════════════════════════════════════════
+// LIVE SYNC FROM GOOGLE SHEETS
+// ═══════════════════════════════════════════════════
+function getSyncUrls() {
+  try { return JSON.parse(localStorage.getItem('sofar-sync-urls') || '{}'); } catch { return {}; }
+}
+
+function saveSyncUrls() {
+  const urls = {
+    calendar: document.getElementById('sync-cal-url').value.trim(),
+    venue: document.getElementById('sync-venue-url').value.trim(),
+    artist: document.getElementById('sync-artist-url').value.trim(),
+  };
+  localStorage.setItem('sofar-sync-urls', JSON.stringify(urls));
+  testAndSync(urls);
+}
+
+async function testAndSync(urls) {
+  const results = document.getElementById('sync-results');
+  results.style.display = 'block';
+  results.innerHTML = '<div class="info-box" style="color:var(--artist)">Testing connections...</div>';
+  
+  const tasks = [
+    { key:'calendar', table:'2026_calendar', url: urls.calendar, label:'2026 Calendar' },
+    { key:'venue',    table:'venue_list',    url: urls.venue,    label:'Venue List' },
+    { key:'artist',   table:'artist_hosted', url: urls.artist,   label:'Artist-Hosted' },
+  ].filter(t => t.url);
+
+  if (!tasks.length) {
+    results.innerHTML = '<div class="info-box" style="color:var(--muted)">No URLs entered yet.</div>';
+    return;
+  }
+
+  let html = '';
+  let anySuccess = false;
+
+  for (const task of tasks) {
+    try {
+      const res = await fetch(task.url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const text = await res.text();
+      const rows = parseCSV(text);
+      if (rows.length < 2) throw new Error('No data rows found');
+      
+      // Upsert into Supabase
+      const fields = getFields(task.table);
+      const headers = rows[0];
+      const cmap = autoMap(headers, fields);
+      const get = (row, key) => cmap[key]>=0 ? (row[cmap[key]]||'').trim() : '';
+      const records = rows.slice(1)
+        .filter(r => r.some(c=>c))
+        .map(row => {
+          const rec = {};
+          fields.forEach(f => { const v = get(row, f.key); if (v) rec[f.key] = v; });
+          return rec;
+        }).filter(r => Object.keys(r).length > 0);
+
+      if (records.length) {
+        const { error } = await sb.from(task.table).upsert(records, { onConflict: 'id', ignoreDuplicates: false });
+        if (error) throw new Error(error.message);
+      }
+
+      html += `<div class="info-box teal" style="margin-bottom:8px">✓ <strong>${task.label}</strong> — ${records.length} rows synced</div>`;
+      anySuccess = true;
+    } catch(e) {
+      html += `<div class="info-box" style="margin-bottom:8px;border-left-color:var(--partnership)">✗ <strong>${task.label}</strong> — ${e.message}</div>`;
+    }
+  }
+
+  results.innerHTML = html;
+  if (anySuccess) {
+    await loadAllData();
+    renderAll();
+    showToast('Sheets synced to database');
+  }
+}
+
+async function autoSyncOnLoad() {
+  const urls = getSyncUrls();
+  if (!urls.calendar && !urls.venue && !urls.artist) return;
+  setSyncState('syncing', 'Syncing sheets...');
+  const tasks = [
+    { key:'calendar', table:'2026_calendar', url: urls.calendar, label:'2026 Calendar' },
+    { key:'venue',    table:'venue_list',    url: urls.venue,    label:'Venue List' },
+    { key:'artist',   table:'artist_hosted', url: urls.artist,   label:'Artist-Hosted' },
+  ].filter(t => t.url);
+
+  let synced = 0;
+  for (const task of tasks) {
+    try {
+      const res = await fetch(task.url);
+      if (!res.ok) continue;
+      const text = await res.text();
+      const rows = parseCSV(text);
+      if (rows.length < 2) continue;
+      const fields = getFields(task.table);
+      const headers = rows[0];
+      const cmap = autoMap(headers, fields);
+      const get = (row, key) => cmap[key]>=0 ? (row[cmap[key]]||'').trim() : '';
+      const records = rows.slice(1)
+        .filter(r => r.some(c=>c))
+        .map(row => {
+          const rec = {};
+          fields.forEach(f => { const v = get(row, f.key); if (v) rec[f.key] = v; });
+          return rec;
+        }).filter(r => Object.keys(r).length > 0);
+      if (records.length) {
+        await sb.from(task.table).upsert(records, { ignoreDuplicates: false });
+        synced += records.length;
+      }
+    } catch(e) { console.warn('Auto-sync failed for', task.label, e); }
+  }
+  if (synced > 0) showToast(`Auto-synced ${synced} rows from Sheets`);
+}
+
+// START
+boot();
+</script>
+</body>
+</html>
