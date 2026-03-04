@@ -887,7 +887,9 @@ const SCHEDULE_FIELDS = [
   { key:'type', label:'Type (Artist Hosted / Discovery etc.)' },
   { key:'area', label:'Area' },
   { key:'show_lead', label:'Show Lead' },
-  { key:'notes', label:'Notes' },
+  { key:'uploaded_to_event_planner', label:'Uploaded to Event Planner' },
+  { key:'merchandising_completed', label:'Merchandising Completed' },
+  { key:'website_double_checked', label:'Website Double Checked' },
 ];
 const VENUE_FIELDS = [
   { key:'venue_name', label:'Venue Name', required:true },
@@ -895,7 +897,6 @@ const VENUE_FIELDS = [
   { key:'area', label:'Area' },
   { key:'capacity', label:'Capacity' },
   { key:'byod_bar', label:'BYOB or Bar' },
-  { key:'notes', label:'Notes' },
 ];
 const ARTIST_FIELDS = [
   { key:'date', label:'Date' },
@@ -936,7 +937,8 @@ function autoMap(headers, fields) {
       const hn = n(h);
       if (f.key==='date') return hn==='date'||hn.includes('showdate');
       if (f.key==='day_of_week'||f.key==='day') return hn.includes('day');
-      if (f.key==='venue'||f.key==='venue_name') return hn.includes('venue')||hn.includes('name');
+      if (f.key==='venue') return hn==='venue'||hn==='venuename'||hn==='showvenue';
+      if (f.key==='venue_name') return hn.includes('venuename')||hn==='venue'||hn.includes('name');
       if (f.key==='neighborhood') return hn.includes('neighbor')||hn.includes('hood');
       if (f.key==='type') return hn==='type'||hn==='showtype';
       if (f.key==='area') return hn==='area';
