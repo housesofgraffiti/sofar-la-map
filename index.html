@@ -10,74 +10,68 @@
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --bg: #0F0E0C; --surface: #1A1916; --surface2: #222018; --surface3: #2A2820;
-  --border: #2E2C28; --border2: #3A3830; --text: #F0EDE8; --muted: #7A7670; --faint: #3A3830;
-  --sidebar-w: 300px; --detail-w: 340px; --header-h: 52px;
-  --artist: #E8A830; --regular: #3ABFA0; --partnership: #E85C3A;
-  --pipeline: #7B9FE8; --outdoor: #90C96A; --hosted: #C46AE8;
+  --bg: #F5F3EE;
+  --surface: #FFFFFF;
+  --surface2: #F0EDE6;
+  --surface3: #E8E4DA;
+  --border: #E0DCD2;
+  --border2: #C8C4BA;
+  --text: #1A1814;
+  --muted: #8A8278;
+  --faint: #C8C4BA;
+  --sidebar-w: 300px;
+  --detail-w: 340px;
+  --header-h: 52px;
+  --artist: #C48820;
+  --regular: #2A9F84;
+  --partnership: #C84A28;
+  --pipeline: #5A80C8;
+  --outdoor: #5A9840;
+  --hosted: #9A4AC8;
 }
 html, body { height: 100%; overflow: hidden; }
 body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; font-size: 13px; }
-::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
-/* ── LOADING SCREEN ── */
+/* ── LOADING ── */
 #loading-screen {
   position: fixed; inset: 0; background: var(--bg);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; z-index: 1000;
 }
-.loading-logo { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 300; letter-spacing: -0.02em; }
+.loading-logo { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 300; letter-spacing: -0.02em; color: var(--text); }
 .loading-logo em { font-style: italic; color: var(--artist); }
 .loading-bar { width: 200px; height: 2px; background: var(--border); border-radius: 1px; overflow: hidden; }
 .loading-fill { height: 100%; background: var(--artist); width: 0; transition: width 0.4s ease; border-radius: 1px; }
 .loading-status { font-size: 11px; color: var(--muted); letter-spacing: 0.08em; }
-
-/* ── KEY SCREEN ── */
-#key-screen {
-  position: fixed; inset: 0; background: var(--bg);
-  display: none; align-items: center; justify-content: center; z-index: 999;
-}
-.key-box { width: 460px; padding: 48px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; }
-.key-logo { font-family: 'Fraunces', serif; font-size: 28px; font-weight: 300; letter-spacing: -0.02em; margin-bottom: 6px; }
-.key-logo em { font-style: italic; color: var(--artist); }
-.key-sub { font-size: 11px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 32px; }
-.key-label { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
-.key-input { width: 100%; background: var(--bg); border: 1px solid var(--border2); border-radius: 3px; padding: 10px 14px; font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text); outline: none; margin-bottom: 10px; transition: border-color 0.2s; }
-.key-input:focus { border-color: var(--artist); }
-.key-input::placeholder { color: var(--faint); }
-.key-btn { width: 100%; background: var(--artist); color: #0F0E0C; border: none; border-radius: 3px; padding: 11px; font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; margin-bottom: 8px; transition: opacity 0.2s; }
-.key-btn:hover { opacity: 0.85; }
-.key-btn-ghost { width: 100%; background: transparent; color: var(--muted); border: 1px solid var(--border2); border-radius: 3px; padding: 9px; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; transition: all 0.2s; }
-.key-btn-ghost:hover { color: var(--text); }
-.key-note { font-size: 11px; color: var(--muted); margin-top: 14px; line-height: 1.7; }
-.key-note a { color: var(--pipeline); text-decoration: none; }
 
 /* ── HEADER ── */
 #header {
   position: fixed; top: 0; left: 0; right: 0; height: var(--header-h);
   background: var(--surface); border-bottom: 1px solid var(--border);
   display: flex; align-items: center; padding: 0 16px; gap: 14px; z-index: 100;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 .logo { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 300; letter-spacing: -0.02em; white-space: nowrap; }
 .logo em { font-style: italic; color: var(--artist); }
-.hdiv { width: 1px; height: 20px; background: var(--border2); flex-shrink: 0; }
+.hdiv { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
 .month-nav { display: flex; align-items: center; gap: 8px; }
 .mnbtn { background: none; border: 1px solid var(--border2); color: var(--muted); border-radius: 3px; width: 24px; height: 24px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
 .mnbtn:hover { border-color: var(--artist); color: var(--artist); }
 #month-label { font-size: 12px; color: var(--text); letter-spacing: 0.05em; min-width: 110px; text-align: center; }
 .view-toggle { display: flex; border: 1px solid var(--border2); border-radius: 3px; overflow: hidden; }
 .vbtn { background: none; border: none; padding: 5px 12px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); cursor: pointer; letter-spacing: 0.06em; text-transform: uppercase; transition: all 0.15s; }
-.vbtn.active { background: var(--artist); color: #0F0E0C; }
+.vbtn.active { background: var(--artist); color: #fff; }
 .hright { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 .hbtn { background: none; border: 1px solid var(--border2); color: var(--muted); border-radius: 3px; padding: 5px 12px; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
 .hbtn:hover { color: var(--text); border-color: var(--border2); }
 .hbtn.teal:hover { color: var(--regular); border-color: var(--regular); }
 .hbtn.amber:hover { color: var(--artist); border-color: var(--artist); }
 #sync-indicator { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
-.sdot { width: 7px; height: 7px; border-radius: 50%; background: var(--regular); box-shadow: 0 0 5px var(--regular); flex-shrink: 0; }
-.sdot.syncing { background: var(--artist); box-shadow: 0 0 5px var(--artist); animation: pulse 1s infinite; }
-.sdot.error { background: var(--partnership); box-shadow: 0 0 5px var(--partnership); }
+.sdot { width: 7px; height: 7px; border-radius: 50%; background: var(--regular); box-shadow: 0 0 4px rgba(42,159,132,0.5); flex-shrink: 0; }
+.sdot.syncing { background: var(--artist); animation: pulse 1s infinite; }
+.sdot.error { background: var(--partnership); }
 @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
 
 /* ── LAYOUT ── */
@@ -95,7 +89,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monosp
 .lcount { font-size: 10px; color: var(--muted); margin-left: 3px; }
 .toggle { position: relative; width: 30px; height: 17px; cursor: pointer; flex-shrink: 0; }
 .toggle input { display: none; }
-.ttrack { position: absolute; inset: 0; background: var(--faint); border-radius: 9px; transition: background 0.2s; }
+.ttrack { position: absolute; inset: 0; background: var(--border); border-radius: 9px; transition: background 0.2s; }
 .toggle input:checked + .ttrack { background: var(--border2); }
 .tthumb { position: absolute; top: 3px; left: 3px; width: 11px; height: 11px; border-radius: 50%; background: var(--muted); transition: all 0.2s; pointer-events: none; }
 .toggle input:checked + .ttrack + .tthumb { left: 16px; background: var(--text); }
@@ -109,7 +103,7 @@ input[type="range"] { width: 100%; accent-color: var(--artist); height: 3px; }
 .list-item.active { background: var(--surface2); }
 .li-name { font-size: 12px; color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
 .li-meta { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
-.badge { font-size: 9px; letter-spacing: 0.07em; text-transform: uppercase; padding: 1px 5px; border-radius: 2px; white-space: nowrap; }
+.badge { font-size: 9px; letter-spacing: 0.07em; text-transform: uppercase; padding: 2px 6px; border-radius: 2px; white-space: nowrap; font-weight: 500; }
 .li-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
 .list-empty { padding: 24px 15px; font-size: 12px; color: var(--muted); text-align: center; font-style: italic; }
 
@@ -118,14 +112,33 @@ input[type="range"] { width: 100%; accent-color: var(--artist); height: 3px; }
 #map { width: 100%; height: 100%; background: var(--bg); }
 
 /* ── LIST VIEW ── */
-#list-view { display: none; position: absolute; inset: 0; background: var(--bg); overflow-y: auto; padding: 20px; }
+#list-view { display: none; position: absolute; inset: 0; background: var(--bg); overflow-y: auto; padding: 24px 28px; }
 #list-view.active { display: block; }
 .lv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.cal-view { display: flex; flex-direction: column; gap: 0; }
+.cal-week { margin-bottom: 28px; }
+.cal-week-label { font-size: 10px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; padding: 0 0 10px; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+.cal-day-row { display: grid; grid-template-columns: 80px 1fr; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--border); align-items: start; }
+.cal-day-row:last-child { border-bottom: none; }
+.cal-day-label { display: flex; flex-direction: column; align-items: flex-end; padding-top: 2px; flex-shrink: 0; }
+.cal-day-name { font-size: 10px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+.cal-day-num { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 300; color: var(--text); line-height: 1; }
+.cal-day-num.today { color: var(--artist); }
+.cal-shows { display: flex; flex-direction: column; gap: 7px; }
+.cal-show-chip { border-radius: 4px; padding: 9px 14px; cursor: pointer; transition: all 0.15s; border-left: 3px solid transparent; background: var(--surface); border: 1px solid var(--border); border-left-width: 3px; }
+.cal-show-chip:hover { background: var(--surface2); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.cal-show-name { font-size: 13px; color: var(--text); font-weight: 500; margin-bottom: 3px; }
+.cal-show-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.cal-show-note { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 5px; line-height: 1.5; }
+.cal-empty { font-size: 11px; color: var(--faint); padding: 6px 0; font-style: italic; }
+.view-mode-toggle { display: flex; border: 1px solid var(--border2); border-radius: 3px; overflow: hidden; margin-bottom: 20px; width: fit-content; }
+.vm-btn { background: none; border: none; padding: 5px 14px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); cursor: pointer; letter-spacing: 0.06em; text-transform: uppercase; transition: all 0.15s; }
+.vm-btn.active { background: var(--surface); color: var(--text); border: 1px solid var(--border2); }
 .lv-card { background: var(--surface); border: 1px solid var(--border); border-left-width: 3px; border-radius: 4px; padding: 14px; cursor: pointer; transition: all 0.15s; }
-.lv-card:hover { background: var(--surface2); }
-.lv-name { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 600; margin-bottom: 4px; letter-spacing: -0.01em; }
+.lv-card:hover { background: var(--surface2); box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+.lv-name { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 600; margin-bottom: 5px; letter-spacing: -0.01em; }
 .lv-meta { display: flex; gap: 7px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
-.lv-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.lv-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .lv-fl { font-size: 9px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
 .lv-fv { font-size: 12px; color: var(--text); }
 .lv-note { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted); font-style: italic; }
@@ -134,10 +147,10 @@ input[type="range"] { width: 100%; accent-color: var(--artist); height: 3px; }
 #detail-panel { width: 0; overflow: hidden; background: var(--surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; transition: width 0.25s cubic-bezier(0.4,0,0.2,1); flex-shrink: 0; }
 #detail-panel.open { width: var(--detail-w); }
 .dp-inner { width: var(--detail-w); height: 100%; display: flex; flex-direction: column; overflow: hidden; }
-.dp-head { padding: 16px 16px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.dp-head { padding: 16px 16px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--surface); }
 .dp-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; float: right; transition: color 0.15s; }
 .dp-close:hover { color: var(--text); }
-.dp-type { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 5px; }
+.dp-type { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 5px; font-weight: 500; }
 .dp-name { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; line-height: 1.2; letter-spacing: -0.01em; margin-bottom: 3px; clear: both; }
 .dp-hood { font-size: 11px; color: var(--muted); }
 .dp-body { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
@@ -148,26 +161,27 @@ input[type="range"] { width: 100%; accent-color: var(--artist); height: 3px; }
 .dp-notes { width: 100%; min-height: 100px; background: var(--bg); border: 1px solid var(--border2); border-radius: 3px; padding: 9px 11px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); resize: vertical; outline: none; line-height: 1.6; transition: border-color 0.15s; }
 .dp-notes:focus { border-color: var(--artist); }
 .dp-notes::placeholder { color: var(--faint); }
-.dp-save { width: 100%; background: var(--surface2); border: 1px solid var(--border2); color: var(--muted); border-radius: 3px; padding: 7px; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; margin-top: 7px; transition: all 0.15s; }
-.dp-save:hover, .dp-save.saved { border-color: var(--regular); color: var(--regular); }
+.dp-save { width: 100%; background: var(--surface2); border: 1px solid var(--border2); color: var(--muted); border-radius: 3px; padding: 8px; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; margin-top: 7px; transition: all 0.15s; }
+.dp-save:hover, .dp-save.saved { border-color: var(--regular); color: var(--regular); background: rgba(42,159,132,0.06); }
 .dp-live-badge { font-size: 10px; color: var(--regular); text-align: center; padding-top: 5px; }
+.coord-hint { font-size: 10px; color: var(--pipeline); line-height: 1.6; background: rgba(90,128,200,0.07); border: 1px solid rgba(90,128,200,0.2); border-radius: 3px; padding: 8px 10px; margin-top: 4px; }
 
-/* ── IMPORT MODAL ── */
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
+/* ── MODAL ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(26,24,20,0.5); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
 .modal-overlay.open { display: flex; }
-.modal { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; width: 100%; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; max-width: 600px; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; width: 100%; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; max-width: 600px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); }
 .modal-head { padding: 20px 24px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; flex-shrink: 0; }
 .modal-title { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
 .modal-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
 .modal-close { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; padding: 0 0 0 12px; transition: color 0.15s; }
 .modal-close:hover { color: var(--text); }
 .modal-body { padding: 20px 24px; flex: 1; overflow-y: auto; }
-.modal-footer { padding: 14px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0; }
+.modal-footer { padding: 14px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0; background: var(--surface); }
 .btn { border-radius: 3px; padding: 8px 18px; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; border: none; }
-.btn-primary { background: var(--artist); color: #0F0E0C; }
-.btn-primary:hover { opacity: 0.85; }
+.btn-primary { background: var(--artist); color: #fff; }
+.btn-primary:hover { opacity: 0.88; }
 .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border2); }
-.btn-ghost:hover { color: var(--text); }
+.btn-ghost:hover { color: var(--text); border-color: var(--border2); }
 .import-tabs { display: flex; border-bottom: 1px solid var(--border); margin: -20px -24px 20px; }
 .itab { padding: 12px 18px; font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
 .itab.active { color: var(--artist); border-bottom-color: var(--artist); }
@@ -193,7 +207,7 @@ input[type="range"] { width: 100%; accent-color: var(--artist); height: 3px; }
 .preview-table th { background: var(--surface2); color: var(--muted); padding: 5px 8px; text-align: left; font-size: 9px; letter-spacing: 0.07em; text-transform: uppercase; border-bottom: 1px solid var(--border); }
 .preview-table td { padding: 5px 8px; border-bottom: 1px solid var(--border); color: var(--text); white-space: nowrap; }
 .drop-zone { border: 2px dashed var(--border2); border-radius: 4px; padding: 32px; text-align: center; cursor: pointer; transition: all 0.15s; }
-.drop-zone:hover, .drop-zone.over { border-color: var(--artist); background: rgba(232,168,48,0.04); }
+.drop-zone:hover, .drop-zone.over { border-color: var(--artist); background: rgba(196,136,32,0.04); }
 .dz-icon { font-size: 26px; margin-bottom: 10px; opacity: 0.4; }
 .dz-text { font-size: 12px; color: var(--muted); line-height: 1.7; }
 .info-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 3px; padding: 12px 14px; font-size: 11px; color: var(--muted); line-height: 1.7; margin-bottom: 14px; }
@@ -202,23 +216,19 @@ input[type="range"] { width: 100%; accent-color: var(--artist); height: 3px; }
 .info-box strong { color: var(--text); }
 
 /* ── TOAST ── */
-#toast { position: fixed; bottom: 20px; right: 20px; background: var(--surface); border: 1px solid var(--border2); border-radius: 4px; padding: 9px 14px; font-size: 12px; color: var(--regular); transform: translateY(50px); opacity: 0; transition: all 0.25s; z-index: 600; pointer-events: none; }
+#toast { position: fixed; bottom: 20px; right: 20px; background: var(--text); border-radius: 4px; padding: 9px 14px; font-size: 12px; color: #fff; transform: translateY(50px); opacity: 0; transition: all 0.25s; z-index: 600; pointer-events: none; }
 #toast.show { transform: translateY(0); opacity: 1; }
-#toast.error { color: var(--partnership); }
+#toast.error { background: var(--partnership); }
 </style>
 </head>
 <body>
 
-<!-- LOADING -->
 <div id="loading-screen">
   <div class="loading-logo">Sofar <em>LA</em></div>
   <div class="loading-bar"><div class="loading-fill" id="loading-fill"></div></div>
   <div class="loading-status" id="loading-status">Connecting to database...</div>
 </div>
 
-<!-- Maps API key hardcoded -->
-
-<!-- APP -->
 <div id="app">
   <div id="header">
     <div class="logo">Sofar <em>LA</em></div>
@@ -236,6 +246,7 @@ input[type="range"] { width: 100%; accent-color: var(--artist); height: 3px; }
     <div class="hright">
       <button class="hbtn amber" onclick="openImport()">⇡ IMPORT</button>
       <button class="hbtn teal" onclick="exportCSV()">↓ CSV</button>
+      <button class="hbtn" onclick="exportNotes()">↓ NOTES</button>
       <button class="hbtn" onclick="refreshData()">↺ SYNC</button>
       <div id="sync-indicator">
         <div class="sdot" id="sdot"></div>
@@ -251,7 +262,7 @@ input[type="range"] { width: 100%; accent-color: var(--artist); height: 3px; }
         <div id="layer-toggles"></div>
       </div>
       <div class="sb-sec">
-        <div class="sb-title">Capacity</div>
+        <div class="sb-title">Capacity Filter</div>
         <div class="cap-row"><span style="font-size:12px;color:var(--text)">Min</span><span class="cap-val" id="capminv">0</span></div>
         <input type="range" id="capmin" min="0" max="300" value="0" oninput="updateCap()">
         <div class="cap-row" style="margin-top:9px"><span style="font-size:12px;color:var(--text)">Max</span><span class="cap-val" id="capmaxv">300+</span></div>
@@ -263,7 +274,12 @@ input[type="range"] { width: 100%; accent-color: var(--artist); height: 3px; }
     <div id="map-wrap">
       <div id="map"></div>
       <div id="list-view">
-        <div class="lv-grid" id="lv-grid"></div>
+        <div class="view-mode-toggle">
+          <button class="vm-btn active" id="vm-cal" onclick="setListMode('calendar')">CALENDAR</button>
+          <button class="vm-btn" id="vm-grid" onclick="setListMode('grid')">GRID</button>
+        </div>
+        <div id="lv-calendar" class="cal-view"></div>
+        <div class="lv-grid" id="lv-grid" style="display:none"></div>
       </div>
     </div>
 
@@ -283,12 +299,20 @@ input[type="range"] { width: 100%; accent-color: var(--artist); height: 3px; }
           <div class="dp-field"><div class="dp-fl">Status</div><div class="dp-fv" id="d-status"></div></div>
           <div class="dp-field" id="d-artist-wrap"><div class="dp-fl">Artist / Host</div><div class="dp-fv" id="d-artist"></div></div>
           <div class="dp-field" id="d-lead-wrap"><div class="dp-fl">Show Lead</div><div class="dp-fv" id="d-lead"></div></div>
+          <div class="dp-field" id="d-coords-wrap">
+            <div class="dp-fl">Map Coordinates</div>
+            <div class="dp-fv" id="d-coords" style="font-size:11px;color:var(--muted)"></div>
+            <div class="coord-hint" id="d-coord-hint" style="display:none">
+              📍 <strong>Backyard or private venue?</strong><br>
+              Go to Google Maps → find the spot → right-click → <strong>"What's here?"</strong> → copy the lat, lng coordinates → add <code>lat</code> and <code>lng</code> columns to your Sheets row.
+            </div>
+          </div>
           <div class="dp-divider"></div>
           <div>
             <div class="dp-fl" style="margin-bottom:7px">Notes</div>
-            <textarea class="dp-notes" id="d-notes" placeholder="Venue contact, logistics, ideas..."></textarea>
+            <textarea class="dp-notes" id="d-notes" placeholder="Venue contact, logistics, load-in, parking, ideas..."></textarea>
             <button class="dp-save" id="save-btn" onclick="saveNote()">SAVE TO DATABASE</button>
-            <div class="dp-live-badge">✓ Saved notes sync to Supabase — visible to everyone</div>
+            <div class="dp-live-badge">✓ Notes sync to Supabase — visible to everyone</div>
           </div>
         </div>
       </div>
@@ -312,10 +336,9 @@ input[type="range"] { width: 100%; accent-color: var(--artist); height: 3px; }
         <div class="itab" onclick="switchTab('upload')">UPLOAD CSV</div>
         <div class="itab" onclick="switchTab('sync')">LIVE SYNC</div>
       </div>
-
       <div class="itab-panel active" id="tab-paste">
         <div class="info-box amber">
-          <strong>From Google Sheets:</strong> Select rows (including header), Cmd/Ctrl+C, paste below.
+          <strong>From Google Sheets:</strong> Select rows (including header row), Cmd/Ctrl+C, paste below.
         </div>
         <div class="form-label">Which table?</div>
         <select class="form-select" id="paste-table">
@@ -325,15 +348,14 @@ input[type="range"] { width: 100%; accent-color: var(--artist); height: 3px; }
         </select>
         <label class="form-label">Paste data</label>
         <textarea class="form-textarea" id="paste-input" placeholder="Date&#9;Day of Week&#9;Venue&#9;Neighborhood&#9;Type&#9;Area&#9;Show Lead&#10;3/5/2026&#9;Thursday&#9;The Andaz&#9;West Hollywood&#9;Artist Hosted&#9;Hollywood + WeHo&#9;Ben" oninput="parsePaste()"></textarea>
-        <div class="form-hint">Tab-separated. First row must be headers.</div>
+        <div class="form-hint">Tab-separated. First row must be headers. Include <strong>lat</strong> and <strong>lng</strong> columns for backyard / private venues.</div>
         <div id="paste-preview" style="display:none">
           <div class="form-label" style="margin-top:8px">Column Mapping</div>
           <div id="col-mapper"></div>
-          <div class="form-label" style="margin-top:12px">Preview</div>
+          <div class="form-label" style="margin-top:12px">Preview (first 3 rows)</div>
           <div class="preview-wrap"><table class="preview-table" id="preview-table"></table></div>
         </div>
       </div>
-
       <div class="itab-panel" id="tab-upload">
         <div class="form-label">Which table?</div>
         <select class="form-select" id="upload-table">
@@ -341,7 +363,7 @@ input[type="range"] { width: 100%; accent-color: var(--artist); height: 3px; }
           <option value="venue_list">Venue List</option>
           <option value="artist_hosted">Artist-Hosted Tracker</option>
         </select>
-        <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()" ondrop="handleDrop(event)" ondragover="e=>e.preventDefault()" ondragleave="document.getElementById('drop-zone').classList.remove('over')">
+        <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()" ondrop="handleDrop(event)" ondragover="e=>e.preventDefault()">
           <div class="dz-icon">📄</div>
           <div class="dz-text" id="dz-text">Drop CSV here or click to browse<br><span style="color:var(--faint)">Sheets → File → Download → CSV</span></div>
         </div>
@@ -352,26 +374,24 @@ input[type="range"] { width: 100%; accent-color: var(--artist); height: 3px; }
           <div class="preview-wrap"><table class="preview-table" id="upload-preview-table"></table></div>
         </div>
       </div>
-
       <div class="itab-panel" id="tab-sync">
         <div class="info-box teal">
-          <strong>How to get your sync URLs from Google Sheets:</strong><br>
-          1. Open your sheet → File → Share → Publish to web<br>
-          2. Select a tab (e.g. "2026 Calendar") → choose <strong>CSV</strong> format<br>
-          3. Click Publish → copy the URL → paste below<br>
-          4. Repeat for each tab. URLs are saved — map auto-fetches on every load.
+          <strong>How to get your sync URLs:</strong><br>
+          1. Google Sheets → File → Share → Publish to web<br>
+          2. Select each tab → choose <strong>CSV</strong> format → click Publish → copy URL<br>
+          3. Paste each URL below. Saved once — map auto-fetches on every load.
         </div>
-        <div class="form-group" style="margin-bottom:14px">
+        <div style="margin-bottom:14px">
           <label class="form-label">2026 Calendar / Schedule URL</label>
           <input type="text" class="form-input" id="sync-cal-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv&gid=...">
           <div class="form-hint">Maps to your 2026_calendar table in Supabase.</div>
         </div>
-        <div class="form-group" style="margin-bottom:14px">
+        <div style="margin-bottom:14px">
           <label class="form-label">Venue List URL</label>
           <input type="text" class="form-input" id="sync-venue-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv&gid=...">
           <div class="form-hint">Maps to your venue_list table in Supabase.</div>
         </div>
-        <div class="form-group" style="margin-bottom:14px">
+        <div style="margin-bottom:14px">
           <label class="form-label">Artist-Hosted Tracker URL</label>
           <input type="text" class="form-input" id="sync-artist-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv&gid=...">
           <div class="form-hint">Maps to your artist_hosted table in Supabase.</div>
@@ -379,9 +399,8 @@ input[type="range"] { width: 100%; accent-color: var(--artist); height: 3px; }
         <button class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="saveSyncUrls()">SAVE & TEST CONNECTIONS</button>
         <div id="sync-results" style="display:none"></div>
         <div class="info-box" style="margin-top:12px;font-size:10px">
-          <strong>Auto-sync behavior:</strong> Every time the map loads, it fetches fresh CSV data from these URLs, 
-          upserts into Supabase, then renders. Lucas updates the sheet → anyone opens the map → data is current. 
-          No manual import needed.
+          <strong>Auto-sync:</strong> Every time the map loads, it fetches fresh CSV data from these URLs,
+          upserts into Supabase, then renders. Update Sheets → open map → data is current. No manual import needed.
         </div>
       </div>
     </div>
@@ -396,34 +415,40 @@ input[type="range"] { width: 100%; accent-color: var(--artist); height: 3px; }
 
 <script>
 // ═══════════════════════════════════════════════════
-// SUPABASE CONFIG
+// SUPABASE
 // ═══════════════════════════════════════════════════
 const SUPABASE_URL = 'https://hbancnwohadueykjqmdv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_6GdVvmpgtyaCuU7_k_D2QQ_a9ZPqp6L';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ═══════════════════════════════════════════════════
-// LAYER CONFIG
-// ═══════════════════════════════════════════════════
 const LAYERS = [
-  { id:'artist',      name:'Artist-Hosted',    color:'#E8A830' },
-  { id:'regular',     name:'Regular Show',     color:'#3ABFA0' },
-  { id:'partnership', name:'Partnership',      color:'#E85C3A' },
-  { id:'pipeline',    name:'Pipeline Venue',   color:'#7B9FE8' },
-  { id:'outdoor',     name:'Summer/Outdoor',   color:'#90C96A' },
-  { id:'hosted',      name:'Artist Tracker',   color:'#C46AE8' },
+  { id:'artist',      name:'Artist-Hosted',  color:'#C48820' },
+  { id:'regular',     name:'Regular Show',   color:'#2A9F84' },
+  { id:'partnership', name:'Partnership',    color:'#C84A28' },
+  { id:'pipeline',    name:'Pipeline Venue', color:'#5A80C8' },
+  { id:'outdoor',     name:'Summer/Outdoor', color:'#5A9840' },
+  { id:'hosted',      name:'Artist Tracker', color:'#9A4AC8' },
 ];
 
 const TYPE_MAP = {
-  'artist hosted': 'artist', 'artist-hosted': 'artist', 'discovery': 'regular',
-  'regular': 'regular', 'private / partnership': 'partnership', 'partnership': 'partnership',
-  'private/partnership': 'partnership', 'pipeline': 'pipeline', 'outdoor': 'outdoor',
+  'artist hosted':'artist','artist-hosted':'artist','artist_hosted':'artist',
+  'discovery':'regular','regular':'regular','regular show':'regular',
+  'private / partnership':'partnership','partnership':'partnership',
+  'private/partnership':'partnership','private':'partnership',
+  'pipeline':'pipeline','pipeline venue':'pipeline',
+  'outdoor':'outdoor','summer/outdoor':'outdoor','summer outdoor':'outdoor',
+  'artist tracker':'hosted','artist-hosted show':'artist',
 };
 
 function resolveType(raw) {
   if (!raw) return 'pipeline';
   const n = raw.toLowerCase().trim();
-  return TYPE_MAP[n] || 'pipeline';
+  if (TYPE_MAP[n]) return TYPE_MAP[n];
+  if (n.includes('artist')) return 'artist';
+  if (n.includes('partner')||n.includes('private')) return 'partnership';
+  if (n.includes('outdoor')||n.includes('summer')) return 'outdoor';
+  if (n.includes('discovery')||n.includes('regular')) return 'regular';
+  return 'pipeline';
 }
 
 // ═══════════════════════════════════════════════════
@@ -437,9 +462,7 @@ let map = null;
 let markers = {};
 let layerVisible = {};
 let capMin = 0, capMax = 300;
-let mapEnabled = false;
 let parsedRows = [], parsedHeaders = [], colMap = {}, importActive = 'paste';
-
 LAYERS.forEach(l => layerVisible[l.id] = true);
 
 // ═══════════════════════════════════════════════════
@@ -450,22 +473,18 @@ async function boot() {
   try {
     await autoSyncOnLoad();
     await loadAllData();
-    setLoading('Data loaded', 80);
     setLoading('Ready', 100);
     setTimeout(() => {
       document.getElementById('loading-screen').style.display = 'none';
-      mapEnabled = true;
       document.getElementById('app').style.display = 'block';
       loadMapsAPI('AIzaSyA6OtNfq7KUOG98lO6YEWe1EpLVdqgC_oo');
     }, 400);
   } catch(e) {
-    setLoading('Connection error — check Supabase config', 100);
-    document.getElementById('loading-status').style.color = '#E85C3A';
     console.error(e);
-    // Still launch app even if DB fails
+    setLoading('Connection error', 100);
+    document.getElementById('loading-status').style.color = '#C84A28';
     setTimeout(() => {
       document.getElementById('loading-screen').style.display = 'none';
-      mapEnabled = true;
       document.getElementById('app').style.display = 'block';
       loadMapsAPI('AIzaSyA6OtNfq7KUOG98lO6YEWe1EpLVdqgC_oo');
     }, 1500);
@@ -478,7 +497,7 @@ function setLoading(msg, pct) {
 }
 
 // ═══════════════════════════════════════════════════
-// DATA LOADING FROM SUPABASE
+// DATA FROM SUPABASE
 // ═══════════════════════════════════════════════════
 async function loadAllData() {
   setSyncState('syncing', 'Syncing...');
@@ -487,85 +506,71 @@ async function loadAllData() {
     sb.from('venue_list').select('*'),
     sb.from('artist_hosted').select('*'),
   ]);
-
   DATA = [];
 
-  // Schedule rows
   if (schedRes.data) {
     schedRes.data.forEach((row, i) => {
       const month = parseMonthFromDate(row.date);
+      const hasCoords = row.lat && row.lng;
       DATA.push({
-        id: 'sch-' + row.id,
-        db_id: row.id,
-        table: '2026_calendar',
-        month,
-        type: resolveType(row.type),
+        id: 'sch-' + row.id, db_id: row.id, table: '2026_calendar',
+        month, type: resolveType(row.type),
         name: row.venue || row.venue_name || '–',
         neighborhood: row.neighborhood || '–',
         area: row.area || '–',
         lat: parseFloat(row.lat) || geoEstimate(row.area, i).lat,
         lng: parseFloat(row.lng) || geoEstimate(row.area, i).lng,
-        date: formatDate(row.date),
-        day: row.day_of_week || row.day || '',
+        hasExactCoords: !!hasCoords,
+        rawLat: row.lat, rawLng: row.lng,
+        date: formatDate(row.date), day: row.day_of_week || row.day || '',
         cap: parseInt(row.capacity) || 0,
-        format: row.type || '–',
-        status: row.status || 'Scheduled',
-        artist: row.artist || '',
-        lead: row.show_lead || '',
-        notes: row.notes || '',
+        format: row.type || '–', status: row.status || 'Scheduled',
+        artist: row.artist || '', lead: row.show_lead || '', notes: row.notes || '',
       });
     });
   }
 
-  // Venue rows
   if (venRes.data) {
     venRes.data.forEach((row, i) => {
+      const hasCoords = row.lat && row.lng;
       DATA.push({
-        id: 'ven-' + row.id,
-        db_id: row.id,
-        table: 'venue_list',
-        month: 'all',
-        type: 'pipeline',
+        id: 'ven-' + row.id, db_id: row.id, table: 'venue_list',
+        month: 'all', type: 'pipeline',
         name: row.venue_name || '–',
         neighborhood: row.neighborhood || '–',
         area: row.area || '–',
         lat: parseFloat(row.lat) || geoEstimate(row.area, i + 50).lat,
         lng: parseFloat(row.lng) || geoEstimate(row.area, i + 50).lng,
-        date: '–',
-        day: '',
+        hasExactCoords: !!hasCoords,
+        rawLat: row.lat, rawLng: row.lng,
+        date: '–', day: '',
         cap: parseInt(row.capacity) || 0,
         format: row.byod_bar ? `Venue · ${row.byod_bar}` : 'Pipeline Venue',
         status: row.status || 'Active',
-        artist: '',
-        lead: '',
-        notes: row.notes || '',
+        artist: '', lead: '', notes: row.notes || '',
       });
     });
   }
 
-  // Artist hosted rows
   if (artRes.data) {
     artRes.data.forEach((row, i) => {
       const month = parseMonthFromDate(row.date);
+      const hasCoords = row.lat && row.lng;
       DATA.push({
-        id: 'art-' + row.id,
-        db_id: row.id,
-        table: 'artist_hosted',
-        month,
-        type: 'hosted',
-        name: row.headliner || row.artist_name || '–',
+        id: 'art-' + row.id, db_id: row.id, table: 'artist_hosted',
+        month, type: 'hosted',
+        name: row.headliner || '–',
         neighborhood: row.neighborhood || '–',
         area: row.area || '–',
         lat: parseFloat(row.lat) || geoEstimate(row.area, i + 100).lat,
         lng: parseFloat(row.lng) || geoEstimate(row.area, i + 100).lng,
-        date: formatDate(row.date),
-        day: row.day || '',
+        hasExactCoords: !!hasCoords,
+        rawLat: row.lat, rawLng: row.lng,
+        date: formatDate(row.date), day: row.day || '',
         cap: parseInt(row.capacity) || 0,
         format: 'Artist-Hosted',
         status: row.venue_status || '–',
-        artist: row.headliner || '',
-        lead: '',
-        notes: row.notes || '',
+        artist: row.headliner || '', lead: '', notes: row.notes || '',
       });
     });
   }
@@ -573,26 +578,28 @@ async function loadAllData() {
   setSyncState('ok', 'Live');
 }
 
-// Rough coordinate estimates by LA area for venues without lat/lng
 function geoEstimate(area, seed) {
   const areas = {
-    'eastside': { lat: 34.075, lng: -118.215 },
-    'central la': { lat: 34.055, lng: -118.295 },
-    'westside': { lat: 34.020, lng: -118.440 },
-    'downtown': { lat: 34.045, lng: -118.255 },
-    'hollywood + weho': { lat: 34.090, lng: -118.360 },
-    'west hollywood': { lat: 34.090, lng: -118.360 },
-    'silver lake': { lat: 34.088, lng: -118.270 },
-    'echo park': { lat: 34.077, lng: -118.258 },
-    'culver city': { lat: 34.022, lng: -118.397 },
-    'arts district': { lat: 34.040, lng: -118.230 },
-    'koreatown': { lat: 34.058, lng: -118.300 },
-    'outer la': { lat: 34.020, lng: -118.480 },
-    'orange county': { lat: 33.750, lng: -117.870 },
+    'eastside':           { lat: 34.075, lng: -118.215 },
+    'central la':         { lat: 34.055, lng: -118.295 },
+    'westside':           { lat: 34.020, lng: -118.440 },
+    'downtown':           { lat: 34.045, lng: -118.255 },
+    'arts district':      { lat: 34.040, lng: -118.230 },
+    'hollywood + weho':   { lat: 34.090, lng: -118.360 },
+    'west hollywood':     { lat: 34.090, lng: -118.360 },
+    'silver lake':        { lat: 34.088, lng: -118.270 },
+    'echo park':          { lat: 34.077, lng: -118.258 },
+    'culver city':        { lat: 34.022, lng: -118.397 },
+    'koreatown':          { lat: 34.058, lng: -118.300 },
+    'atwater village':    { lat: 34.115, lng: -118.257 },
+    'eagle rock':         { lat: 34.139, lng: -118.216 },
+    'frogtown':           { lat: 34.095, lng: -118.243 },
+    'outer la':           { lat: 34.020, lng: -118.480 },
+    'orange county':      { lat: 33.750, lng: -117.870 },
   };
   const key = (area || '').toLowerCase();
   const base = areas[key] || { lat: 34.052, lng: -118.280 };
-  const jitter = ((seed * 137.508) % 1) * 0.015 - 0.0075;
+  const jitter = ((seed * 137.508) % 1) * 0.014 - 0.007;
   return { lat: base.lat + jitter, lng: base.lng + jitter * 1.5 };
 }
 
@@ -607,31 +614,12 @@ function formatDate(d) {
   if (!d) return '–';
   const date = new Date(d);
   if (isNaN(date)) return d;
-  return date.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric', year:'numeric'});
+  return date.toLocaleDateString('en-US', {weekday:'short',month:'short',day:'numeric',year:'numeric'});
 }
 
 // ═══════════════════════════════════════════════════
-// MAP LAUNCH
+// MAPS
 // ═══════════════════════════════════════════════════
-function launchWithMap() {
-  const key = document.getElementById('api-key-input').value.trim();
-  if (!key) { alert('Please enter a Google Maps API key.'); return; }
-  localStorage.setItem('sofar-maps-key', key);
-  mapEnabled = true;
-  document.getElementById('key-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  loadMapsAPI(key);
-}
-
-function launchListOnly() {
-  mapEnabled = false;
-  document.getElementById('key-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  document.getElementById('btn-map').style.display = 'none';
-  setView('list');
-  renderAll();
-}
-
 function loadMapsAPI(key) {
   const s = document.createElement('script');
   s.src = `https://maps.googleapis.com/maps/api/js?key=${key}&callback=initMap`;
@@ -641,22 +629,30 @@ function loadMapsAPI(key) {
 }
 
 window.initMap = function() {
-  const dark = [
-    {elementType:'geometry',stylers:[{color:'#1a1916'}]},
-    {elementType:'labels.text.stroke',stylers:[{color:'#1a1916'}]},
-    {elementType:'labels.text.fill',stylers:[{color:'#6a6660'}]},
-    {featureType:'administrative.locality',elementType:'labels.text.fill',stylers:[{color:'#c4b5a5'}]},
-    {featureType:'poi',stylers:[{visibility:'off'}]},
-    {featureType:'road',elementType:'geometry',stylers:[{color:'#2a2820'}]},
-    {featureType:'road',elementType:'labels.text.fill',stylers:[{color:'#8a8278'}]},
-    {featureType:'road.highway',elementType:'geometry',stylers:[{color:'#353228'}]},
-    {featureType:'transit',stylers:[{visibility:'off'}]},
-    {featureType:'water',elementType:'geometry',stylers:[{color:'#0d0c0a'}]},
+  const warmLight = [
+    { elementType: 'geometry', stylers: [{ color: '#f5f0e8' }] },
+    { elementType: 'labels.text.stroke', stylers: [{ color: '#f5f0e8' }] },
+    { elementType: 'labels.text.fill', stylers: [{ color: '#8a7a6a' }] },
+    { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#5a4a3a' }] },
+    { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+    { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#e4edd8' }] },
+    { featureType: 'poi.park', stylers: [{ visibility: 'simplified' }] },
+    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
+    { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#a09080' }] },
+    { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#efe8dc' }] },
+    { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#e0d8c8' }] },
+    { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#d0c8b8' }] },
+    { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#c8dde8' }] },
+    { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#7a9aaa' }] },
   ];
   map = new google.maps.Map(document.getElementById('map'), {
-    center:{lat:34.0522,lng:-118.2800}, zoom:11, styles:dark,
-    disableDefaultUI:true, zoomControl:true,
-    zoomControlOptions:{position:google.maps.ControlPosition.RIGHT_BOTTOM}
+    center: { lat: 34.0522, lng: -118.2800 },
+    zoom: 11,
+    styles: warmLight,
+    disableDefaultUI: true,
+    zoomControl: true,
+    zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_BOTTOM }
   });
   renderAll();
 };
@@ -664,14 +660,14 @@ window.initMap = function() {
 // ═══════════════════════════════════════════════════
 // RENDER
 // ═══════════════════════════════════════════════════
-function getColor(type) { return (LAYERS.find(l=>l.id===type)||{}).color || '#888'; }
-function getLabel(type) { return (LAYERS.find(l=>l.id===type)||{}).name || type; }
+function getColor(type) { return (LAYERS.find(l=>l.id===type)||{}).color||'#888'; }
+function getLabel(type) { return (LAYERS.find(l=>l.id===type)||{}).name||type; }
 
 function getFiltered() {
   return DATA.filter(item => {
-    const monthOk = item.month === 'all' || item.month === currentMonth;
+    const monthOk = item.month==='all' || item.month===currentMonth;
     const layerOk = layerVisible[item.type] !== false;
-    const capOk = !item.cap || (item.cap >= capMin && item.cap <= capMax);
+    const capOk = (capMin===0 && capMax>=300) || !item.cap || (item.cap>=capMin && item.cap<=capMax);
     return monthOk && layerOk && capOk;
   });
 }
@@ -679,7 +675,7 @@ function getFiltered() {
 function renderAll() {
   clearMarkers();
   const data = getFiltered();
-  if (mapEnabled && map) data.forEach(createMarker);
+  if (map) data.forEach(createMarker);
   renderLayerToggles();
   renderSidebar(data);
   renderListView(data);
@@ -693,18 +689,27 @@ function clearMarkers() {
 function createMarker(item) {
   if (!map) return;
   const color = getColor(item.type);
-  const isShow = !['pipeline','outdoor'].includes(item.type);
-  const label = isShow && item.date !== '–' ? (item.date.split(' ')[2] || '') : '';
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44">
-    <ellipse cx="18" cy="42" rx="6" ry="2" fill="rgba(0,0,0,0.3)"/>
-    <path d="M18 0C8 0 0 8 0 18C0 30 18 44 18 44S36 30 36 18C36 8 28 0 18 0Z" fill="${color}"/>
-    <circle cx="18" cy="18" r="11" fill="rgba(0,0,0,0.25)"/>
-    ${label ? `<text x="18" y="23" text-anchor="middle" font-family="monospace" font-size="9" font-weight="bold" fill="#fff">${label}</text>` : `<circle cx="18" cy="18" r="4" fill="rgba(255,255,255,0.5)"/>`}
+  const isVenue = ['pipeline','outdoor'].includes(item.type);
+  let line1 = '', line2 = '';
+  if (!isVenue && item.date !== '–') {
+    const parts = item.date.split(' ');
+    if (parts.length >= 3) { line1 = parts[1].replace(',',''); line2 = parts[2].replace(',',''); }
+  }
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="44" height="52" viewBox="0 0 44 52">
+    <ellipse cx="22" cy="50" rx="6" ry="2" fill="rgba(0,0,0,0.15)"/>
+    <path d="M22 0C10 0 0 10 0 22C0 36 22 52 22 52S44 36 44 22C44 10 34 0 22 0Z" fill="${color}"/>
+    <circle cx="22" cy="22" r="14" fill="rgba(255,255,255,0.18)"/>
+    ${line1&&line2
+      ? `<text x="22" y="19" text-anchor="middle" font-family="monospace" font-size="8" fill="rgba(255,255,255,0.9)" font-weight="500">${line1}</text>
+         <text x="22" y="30" text-anchor="middle" font-family="monospace" font-size="11" fill="#fff" font-weight="bold">${line2}</text>`
+      : isVenue
+      ? `<text x="22" y="27" text-anchor="middle" font-family="monospace" font-size="15" fill="rgba(255,255,255,0.7)">◎</text>`
+      : `<circle cx="22" cy="22" r="5" fill="rgba(255,255,255,0.6)"/>`}
   </svg>`;
   const marker = new google.maps.Marker({
-    position:{lat:item.lat,lng:item.lng}, map,
-    icon:{ url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg), scaledSize:new google.maps.Size(28,34), anchor:new google.maps.Point(14,34) },
-    title: item.name, zIndex: isShow ? 10 : 5
+    position: { lat: item.lat, lng: item.lng }, map,
+    icon: { url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg), scaledSize: new google.maps.Size(36,43), anchor: new google.maps.Point(18,43) },
+    title: item.name, zIndex: isVenue ? 5 : 10
   });
   marker.addListener('click', () => selectItem(item.id));
   markers[item.id] = marker;
@@ -746,24 +751,123 @@ function renderSidebar(data) {
 function listItemHTML(item) {
   const color = getColor(item.type);
   const active = selectedId === item.id;
+  const hasNote = item.notes && item.notes.trim().length > 0;
   return `<div class="list-item ${active?'active':''}" style="border-left-color:${active?color:'transparent'}" onclick="selectItem('${item.id}')">
-    <div class="li-name">${item.name}</div>
+    <div class="li-name" style="display:flex;align-items:center;justify-content:space-between">
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.name}</span>
+      ${hasNote ? `<span style="font-size:10px;margin-left:6px;flex-shrink:0;color:var(--artist)">📝</span>` : ''}
+    </div>
     <div class="li-meta">
-      <span class="badge" style="background:${color}22;color:${color}">${getLabel(item.type)}</span>
+      <span class="badge" style="background:${color}18;color:${color}">${getLabel(item.type)}</span>
       ${item.date!=='–'?`<span style="font-size:11px;color:var(--muted)">${item.date}</span>`:''}
     </div>
     <div class="li-sub">${item.neighborhood}${item.area&&item.area!==item.neighborhood?' · '+item.area:''}${item.cap?' · '+item.cap+' cap':''}</div>
   </div>`;
 }
 
+let listMode = 'calendar';
+
+function setListMode(mode) {
+  listMode = mode;
+  document.getElementById('vm-cal').classList.toggle('active', mode==='calendar');
+  document.getElementById('vm-grid').classList.toggle('active', mode==='grid');
+  document.getElementById('lv-calendar').style.display = mode==='calendar' ? '' : 'none';
+  document.getElementById('lv-grid').style.display = mode==='grid' ? '' : 'none';
+}
+
 function renderListView(data) {
+  renderCalendarView(data);
+  renderGridView(data);
+}
+
+function renderCalendarView(data) {
+  const cal = document.getElementById('lv-calendar');
+  const shows = data.filter(d => d.date !== '–').sort((a,b) => new Date(a.date) - new Date(b.date));
+  const venues = data.filter(d => d.date === '–');
+  if (!shows.length && !venues.length) { cal.innerHTML = '<div class="list-empty">Nothing matches.</div>'; return; }
+
+  const weeks = {};
+  const today = new Date();
+  shows.forEach(item => {
+    const d = new Date(item.date);
+    if (isNaN(d)) return;
+    const mon = new Date(d);
+    mon.setDate(d.getDate() - ((d.getDay()+6)%7));
+    const wk = mon.toISOString().split('T')[0];
+    if (!weeks[wk]) weeks[wk] = {};
+    const dayKey = d.toISOString().split('T')[0];
+    if (!weeks[wk][dayKey]) weeks[wk][dayKey] = [];
+    weeks[wk][dayKey].push(item);
+  });
+
+  let html = '';
+  Object.keys(weeks).sort().forEach(wk => {
+    const monDate = new Date(wk);
+    const sunDate = new Date(wk); sunDate.setDate(monDate.getDate()+6);
+    const fmt = d => d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    html += `<div class="cal-week"><div class="cal-week-label">Week of ${fmt(monDate)} – ${fmt(sunDate)}</div>`;
+    const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    for (let i = 0; i < 7; i++) {
+      const dayDate = new Date(wk); dayDate.setDate(monDate.getDate()+i);
+      const dayKey = dayDate.toISOString().split('T')[0];
+      const dayShows = weeks[wk][dayKey] || [];
+      if (!dayShows.length) continue;
+      const isToday = dayDate.toDateString() === today.toDateString();
+      html += `<div class="cal-day-row">
+        <div class="cal-day-label">
+          <div class="cal-day-name">${dayNames[i]}</div>
+          <div class="cal-day-num ${isToday?'today':''}">${dayDate.getDate()}</div>
+        </div>
+        <div class="cal-shows">
+          ${dayShows.map(item => {
+            const color = getColor(item.type);
+            return `<div class="cal-show-chip" style="border-left-color:${color}" onclick="selectItem('${item.id}')">
+              <div class="cal-show-name">${item.name}</div>
+              <div class="cal-show-meta">
+                <span class="badge" style="background:${color}18;color:${color}">${getLabel(item.type)}</span>
+                <span style="font-size:11px;color:var(--muted)">${item.neighborhood}${item.area&&item.area!==item.neighborhood?' · '+item.area:''}</span>
+                ${item.cap?`<span style="font-size:11px;color:var(--muted)">${item.cap} cap</span>`:''}
+                ${item.lead?`<span style="font-size:11px;color:var(--muted)">Lead: ${item.lead}</span>`:''}
+              </div>
+              ${item.notes?`<div class="cal-show-note">📝 ${item.notes.substring(0,120)}${item.notes.length>120?'…':''}</div>`:''}
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+    }
+    html += `</div>`;
+  });
+
+  if (venues.length) {
+    html += `<div class="cal-week">
+      <div class="cal-week-label">Pipeline & Outdoor Venues (${venues.length})</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">
+        ${venues.map(item => {
+          const color = getColor(item.type);
+          return `<div class="cal-show-chip" style="border-left-color:${color}" onclick="selectItem('${item.id}')">
+            <div class="cal-show-name">${item.name}</div>
+            <div class="cal-show-meta">
+              <span class="badge" style="background:${color}18;color:${color}">${item.status}</span>
+              <span style="font-size:11px;color:var(--muted)">${item.area||item.neighborhood}</span>
+            </div>
+            ${item.notes?`<div class="cal-show-note">📝 ${item.notes.substring(0,80)}${item.notes.length>80?'…':''}</div>`:''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  cal.innerHTML = html || '<div class="list-empty">Nothing to show.</div>';
+}
+
+function renderGridView(data) {
   const sorted = [...data].sort((a,b)=>a.date.localeCompare(b.date));
   document.getElementById('lv-grid').innerHTML = sorted.length ? sorted.map(item => {
     const color = getColor(item.type);
     return `<div class="lv-card" style="border-left-color:${color}" onclick="selectItem('${item.id}')">
       <div class="lv-name">${item.name}</div>
       <div class="lv-meta">
-        <span class="badge" style="background:${color}22;color:${color}">${getLabel(item.type)}</span>
+        <span class="badge" style="background:${color}18;color:${color}">${getLabel(item.type)}</span>
         ${item.date!=='–'?`<span style="font-size:11px;color:var(--muted)">${item.date}</span>`:''}
       </div>
       <div class="lv-fields">
@@ -772,7 +876,7 @@ function renderListView(data) {
         <div><div class="lv-fl">Format</div><div class="lv-fv">${item.format}</div></div>
         <div><div class="lv-fl">Status</div><div class="lv-fv">${item.status}</div></div>
       </div>
-      ${item.notes?`<div class="lv-note">${item.notes.substring(0,80)}${item.notes.length>80?'…':''}</div>`:''}
+      ${item.notes?`<div class="lv-note">📝 ${item.notes.substring(0,100)}${item.notes.length>100?'…':''}</div>`:''}
     </div>`;
   }).join('') : '<div class="list-empty">Nothing matches.</div>';
 }
@@ -791,7 +895,7 @@ function selectItem(id) {
   document.getElementById('d-type').style.color = color;
   document.getElementById('d-name').textContent = item.name;
   document.getElementById('d-hood').textContent = item.neighborhood;
-  document.getElementById('d-date').textContent = item.date !== '–' ? `${item.date}${item.day?' ('+item.day+')':''}` : '–';
+  document.getElementById('d-date').textContent = item.date!=='–' ? `${item.date}${item.day?' ('+item.day+')':''}` : '–';
   document.getElementById('d-area').textContent = item.area || '–';
   document.getElementById('d-cap').textContent = item.cap ? `${item.cap} guests` : '–';
   document.getElementById('d-format').textContent = item.format;
@@ -802,6 +906,20 @@ function selectItem(id) {
   const lw = document.getElementById('d-lead-wrap');
   lw.style.display = item.lead ? '' : 'none';
   document.getElementById('d-lead').textContent = item.lead || '';
+
+  // Coords
+  const coordsEl = document.getElementById('d-coords');
+  const hintEl = document.getElementById('d-coord-hint');
+  if (item.hasExactCoords) {
+    coordsEl.textContent = `${parseFloat(item.rawLat).toFixed(5)}, ${parseFloat(item.rawLng).toFixed(5)}`;
+    coordsEl.style.color = 'var(--muted)';
+    hintEl.style.display = 'none';
+  } else {
+    coordsEl.textContent = 'Estimated from area — no exact coordinates';
+    coordsEl.style.color = 'var(--muted)';
+    hintEl.style.display = '';
+  }
+
   document.getElementById('d-notes').value = item.notes || '';
   const btn = document.getElementById('save-btn');
   btn.classList.remove('saved'); btn.textContent = 'SAVE TO DATABASE';
@@ -847,13 +965,14 @@ function setView(v) {
 }
 
 async function refreshData() {
+  setSyncState('syncing', 'Syncing...');
   await loadAllData();
   renderAll();
   showToast('Synced with database');
 }
 
 // ═══════════════════════════════════════════════════
-// SAVE NOTES TO SUPABASE
+// SAVE NOTES
 // ═══════════════════════════════════════════════════
 async function saveNote() {
   if (!selectedId) return;
@@ -870,7 +989,7 @@ async function saveNote() {
     item.notes = notes;
     btn.textContent = '✓ SAVED'; btn.classList.add('saved');
     setTimeout(() => { btn.textContent = 'SAVE TO DATABASE'; btn.classList.remove('saved'); }, 2500);
-    showToast('Note saved to database');
+    showToast('Note saved');
     renderSidebar(getFiltered());
     renderListView(getFiltered());
   }
@@ -887,9 +1006,12 @@ const SCHEDULE_FIELDS = [
   { key:'type', label:'Type (Artist Hosted / Discovery etc.)' },
   { key:'area', label:'Area' },
   { key:'show_lead', label:'Show Lead' },
+  { key:'capacity', label:'Capacity' },
+  { key:'lat', label:'Latitude (for exact map pin)' },
+  { key:'lng', label:'Longitude (for exact map pin)' },
+  { key:'notes', label:'Notes' },
   { key:'uploaded_to_event_planner', label:'Uploaded to Event Planner' },
   { key:'merchandising_completed', label:'Merchandising Completed' },
-  { key:'website_double_checked', label:'Website Double Checked' },
 ];
 const VENUE_FIELDS = [
   { key:'venue_name', label:'Venue Name', required:true },
@@ -897,6 +1019,10 @@ const VENUE_FIELDS = [
   { key:'area', label:'Area' },
   { key:'capacity', label:'Capacity' },
   { key:'byod_bar', label:'BYOB or Bar' },
+  { key:'status', label:'Status' },
+  { key:'lat', label:'Latitude (for exact map pin)' },
+  { key:'lng', label:'Longitude (for exact map pin)' },
+  { key:'notes', label:'Notes' },
 ];
 const ARTIST_FIELDS = [
   { key:'date', label:'Date' },
@@ -911,7 +1037,7 @@ const ARTIST_FIELDS = [
 ];
 
 function getFields(table) {
-  if (table==='venues') return VENUE_FIELDS;
+  if (table==='venue_list') return VENUE_FIELDS;
   if (table==='artist_hosted') return ARTIST_FIELDS;
   return SCHEDULE_FIELDS;
 }
@@ -936,22 +1062,25 @@ function autoMap(headers, fields) {
     const idx = headers.findIndex(h => {
       const hn = n(h);
       if (f.key==='date') return hn==='date'||hn.includes('showdate');
-      if (f.key==='day_of_week'||f.key==='day') return hn.includes('day');
-      if (f.key==='venue') return hn==='venue'||hn==='venuename'||hn==='showvenue';
-      if (f.key==='venue_name') return hn.includes('venuename')||hn==='venue'||hn.includes('name');
-      if (f.key==='neighborhood') return hn.includes('neighbor')||hn.includes('hood');
+      if (f.key==='day_of_week'||f.key==='day') return hn==='day'||hn==='dayofweek';
+      if (f.key==='venue') return hn==='venue'||hn==='venuename';
+      if (f.key==='venue_name') return hn.includes('venuename')||hn==='venue';
+      if (f.key==='neighborhood') return hn.includes('neighbor');
       if (f.key==='type') return hn==='type'||hn==='showtype';
       if (f.key==='area') return hn==='area';
       if (f.key==='show_lead') return hn.includes('lead');
       if (f.key==='capacity') return hn.includes('cap');
       if (f.key==='byod_bar') return hn.includes('byob')||hn.includes('bar');
-      if (f.key==='headliner') return hn.includes('head')||hn.includes('artist');
-      if (f.key==='venue_status') return hn.includes('status');
+      if (f.key==='headliner') return hn.includes('head')||hn==='artist';
+      if (f.key==='venue_status') return hn==='venuestatus'||hn==='status';
       if (f.key==='venue_booked') return hn.includes('booked');
       if (f.key==='opener_1') return hn==='opener1'||hn==='opener';
       if (f.key==='opener_2') return hn==='opener2';
       if (f.key==='venue_ideas') return hn.includes('idea');
-      if (f.key==='notes') return hn==='notes'||hn.includes('note');
+      if (f.key==='notes') return hn==='notes';
+      if (f.key==='lat') return hn==='lat'||hn==='latitude';
+      if (f.key==='lng') return hn==='lng'||hn==='lon'||hn==='longitude';
+      if (f.key==='status') return hn==='status';
       return false;
     });
     if (idx>=0) m[f.key]=idx;
@@ -961,13 +1090,12 @@ function autoMap(headers, fields) {
 
 function renderColMapper(headers, fields, containerId) {
   colMap = autoMap(headers, fields);
-  const opts = ['(skip)', ...headers].map((h,i)=>`<option value="${i-1}">${h}</option>`).join('');
   document.getElementById(containerId).innerHTML = fields.map(f=>`
     <div class="col-grid">
       <div class="col-label">${f.label}${f.required?'<span style="color:var(--partnership)"> *</span>':''}</div>
       <div class="col-arrow">→</div>
       <select class="col-select" data-field="${f.key}" onchange="colMap['${f.key}']=parseInt(this.value)">
-        ${['(skip)', ...headers].map((h,i)=>`<option value="${i-1}" ${colMap[f.key]===i-1?'selected':''}>${h}</option>`).join('')}
+        ${['(skip)',...headers].map((h,i)=>`<option value="${i-1}" ${colMap[f.key]===i-1?'selected':''}>${h}</option>`).join('')}
       </select>
     </div>`).join('');
 }
@@ -983,8 +1111,7 @@ function parsePaste() {
   if (!raw.trim()) { document.getElementById('paste-preview').style.display='none'; return; }
   const rows = parseCSV(raw);
   if (rows.length < 2) return;
-  parsedHeaders = rows[0];
-  parsedRows = rows.slice(1).filter(r=>r.some(c=>c));
+  parsedHeaders = rows[0]; parsedRows = rows.slice(1).filter(r=>r.some(c=>c));
   const table = document.getElementById('paste-table').value;
   document.getElementById('paste-preview').style.display='block';
   renderColMapper(parsedHeaders, getFields(table), 'col-mapper');
@@ -1004,8 +1131,7 @@ function processFile(file) {
   reader.onload = e => {
     const rows = parseCSV(e.target.result);
     if (rows.length < 2) return;
-    parsedHeaders = rows[0];
-    parsedRows = rows.slice(1).filter(r=>r.some(c=>c));
+    parsedHeaders = rows[0]; parsedRows = rows.slice(1).filter(r=>r.some(c=>c));
     const table = document.getElementById('upload-table').value;
     document.getElementById('upload-preview').style.display = 'block';
     renderColMapper(parsedHeaders, getFields(table), 'upload-col-mapper');
@@ -1017,12 +1143,11 @@ function processFile(file) {
 
 async function confirmImport() {
   if (!parsedRows.length) { showToast('No data to import', true); return; }
-  // Sync colMap from selects
   document.querySelectorAll('[data-field]').forEach(sel => {
     const v = parseInt(sel.value);
     if (!isNaN(v) && v >= 0) colMap[sel.dataset.field] = v;
   });
-  const table = importActive === 'paste'
+  const table = importActive==='paste'
     ? document.getElementById('paste-table').value
     : document.getElementById('upload-table').value;
   const fields = getFields(table);
@@ -1041,89 +1166,14 @@ async function confirmImport() {
     setSyncState('error', 'Error');
   } else {
     closeModal('import-modal');
-    showToast(`Imported ${records.length} rows to ${table}`);
-    await loadAllData();
-    renderAll();
-    parsedRows = []; parsedHeaders = [];
+    showToast(`Imported ${records.length} rows`);
+    await loadAllData(); renderAll();
+    parsedRows=[]; parsedHeaders=[];
   }
 }
 
 // ═══════════════════════════════════════════════════
-// EXPORT
-// ═══════════════════════════════════════════════════
-function exportCSV() {
-  const data = getFiltered();
-  const headers = ['Type','Name','Neighborhood','Area','Date','Day','Capacity','Format','Status','Artist','Lead','Notes'];
-  const rows = data.map(d => [
-    getLabel(d.type), `"${d.name}"`, `"${d.neighborhood}"`, `"${d.area}"`,
-    d.date, d.day, d.cap, `"${d.format}"`, `"${d.status}"`,
-    `"${d.artist||''}"`, `"${d.lead||''}"`, `"${(d.notes||'').replace(/"/g,'""')}"`
-  ].join(','));
-  const blob = new Blob([[headers.join(','),...rows].join('\n')], {type:'text/csv'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `sofar-la-${currentMonth}.csv`; a.click();
-  URL.revokeObjectURL(a.href);
-  showToast('CSV exported');
-}
-
-// ═══════════════════════════════════════════════════
-// UTILS
-// ═══════════════════════════════════════════════════
-function setSyncState(state, label) {
-  const dot = document.getElementById('sdot');
-  const lbl = document.getElementById('sync-label');
-  dot.className = 'sdot' + (state==='syncing'?' syncing':state==='error'?' error':'');
-  lbl.textContent = label;
-}
-
-function showToast(msg, isError) {
-  const t = document.getElementById('toast');
-  t.textContent = (isError ? '✗ ' : '✓ ') + msg;
-  t.className = 'show' + (isError ? ' error' : '');
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.className = '', 2500);
-}
-
-function openImport() {
-  parsedRows=[]; parsedHeaders=[];
-  document.getElementById('paste-input').value='';
-  document.getElementById('paste-preview').style.display='none';
-  document.getElementById('upload-preview').style.display='none';
-  document.getElementById('dz-text').innerHTML='Drop CSV here or click to browse<br><span style="color:var(--faint)">Sheets → File → Download → CSV</span>';
-  // Restore saved sync URLs
-  const urls = getSyncUrls();
-  if (document.getElementById('sync-cal-url')) document.getElementById('sync-cal-url').value = urls.calendar || '';
-  if (document.getElementById('sync-venue-url')) document.getElementById('sync-venue-url').value = urls.venue || '';
-  if (document.getElementById('sync-artist-url')) document.getElementById('sync-artist-url').value = urls.artist || '';
-  document.getElementById('sync-results').style.display = 'none';
-  const btn = document.getElementById('import-confirm-btn');
-  if (btn) btn.style.display = '';
-  openModal('import-modal');
-}
-
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
-function switchTab(tab) {
-  importActive = tab;
-  document.querySelectorAll('.itab').forEach((t,i)=>t.classList.toggle('active',['paste','upload','sync'][i]===tab));
-  document.querySelectorAll('.itab-panel').forEach(p=>p.classList.remove('active'));
-  document.getElementById('tab-'+tab).classList.add('active');
-  const btn = document.getElementById('import-confirm-btn');
-  if (btn) btn.style.display = tab === 'sync' ? 'none' : '';
-}
-
-document.addEventListener('keydown', e => {
-  if (e.key==='Escape') { closeModal('import-modal'); closeDetail(); }
-});
-
-document.querySelectorAll('.modal-overlay').forEach(o => {
-  o.addEventListener('click', e => { if (e.target===o) o.classList.remove('open'); });
-});
-
-// ═══════════════════════════════════════════════════
-// LIVE SYNC FROM GOOGLE SHEETS
+// LIVE SYNC
 // ═══════════════════════════════════════════════════
 function getSyncUrls() {
   try { return JSON.parse(localStorage.getItem('sofar-sync-urls') || '{}'); } catch { return {}; }
@@ -1143,60 +1193,41 @@ async function testAndSync(urls) {
   const results = document.getElementById('sync-results');
   results.style.display = 'block';
   results.innerHTML = '<div class="info-box" style="color:var(--artist)">Testing connections...</div>';
-  
   const tasks = [
-    { key:'calendar', table:'2026_calendar', url: urls.calendar, label:'2026 Calendar' },
-    { key:'venue',    table:'venue_list',    url: urls.venue,    label:'Venue List' },
-    { key:'artist',   table:'artist_hosted', url: urls.artist,   label:'Artist-Hosted' },
+    { table:'2026_calendar', url:urls.calendar, label:'2026 Calendar' },
+    { table:'venue_list',    url:urls.venue,    label:'Venue List' },
+    { table:'artist_hosted', url:urls.artist,   label:'Artist-Hosted' },
   ].filter(t => t.url);
-
-  if (!tasks.length) {
-    results.innerHTML = '<div class="info-box" style="color:var(--muted)">No URLs entered yet.</div>';
-    return;
-  }
-
-  let html = '';
-  let anySuccess = false;
-
+  if (!tasks.length) { results.innerHTML = '<div class="info-box">No URLs entered yet.</div>'; return; }
+  let html = '', anySuccess = false;
   for (const task of tasks) {
     try {
       const res = await fetch(task.url);
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const text = await res.text();
       const rows = parseCSV(text);
-      if (rows.length < 2) throw new Error('No data rows found');
-      
-      // Upsert into Supabase
+      if (rows.length < 2) throw new Error('No data rows');
       const fields = getFields(task.table);
       const headers = rows[0];
       const cmap = autoMap(headers, fields);
       const get = (row, key) => cmap[key]>=0 ? (row[cmap[key]]||'').trim() : '';
-      const records = rows.slice(1)
-        .filter(r => r.some(c=>c))
-        .map(row => {
-          const rec = {};
-          fields.forEach(f => { const v = get(row, f.key); if (v) rec[f.key] = v; });
-          return rec;
-        }).filter(r => Object.keys(r).length > 0);
-
+      const records = rows.slice(1).filter(r=>r.some(c=>c)).map(row => {
+        const rec = {};
+        fields.forEach(f => { const v = get(row, f.key); if (v) rec[f.key] = v; });
+        return rec;
+      }).filter(r => Object.keys(r).length > 0);
       if (records.length) {
-        const { error } = await sb.from(task.table).upsert(records, { onConflict: 'id', ignoreDuplicates: false });
+        const { error } = await sb.from(task.table).upsert(records, { ignoreDuplicates: false });
         if (error) throw new Error(error.message);
       }
-
       html += `<div class="info-box teal" style="margin-bottom:8px">✓ <strong>${task.label}</strong> — ${records.length} rows synced</div>`;
       anySuccess = true;
     } catch(e) {
-      html += `<div class="info-box" style="margin-bottom:8px;border-left-color:var(--partnership)">✗ <strong>${task.label}</strong> — ${e.message}</div>`;
+      html += `<div class="info-box" style="margin-bottom:8px;border-left:3px solid var(--partnership)">✗ <strong>${task.label}</strong> — ${e.message}</div>`;
     }
   }
-
   results.innerHTML = html;
-  if (anySuccess) {
-    await loadAllData();
-    renderAll();
-    showToast('Sheets synced to database');
-  }
+  if (anySuccess) { await loadAllData(); renderAll(); showToast('Sheets synced'); }
 }
 
 async function autoSyncOnLoad() {
@@ -1204,11 +1235,10 @@ async function autoSyncOnLoad() {
   if (!urls.calendar && !urls.venue && !urls.artist) return;
   setSyncState('syncing', 'Syncing sheets...');
   const tasks = [
-    { key:'calendar', table:'2026_calendar', url: urls.calendar, label:'2026 Calendar' },
-    { key:'venue',    table:'venue_list',    url: urls.venue,    label:'Venue List' },
-    { key:'artist',   table:'artist_hosted', url: urls.artist,   label:'Artist-Hosted' },
+    { table:'2026_calendar', url:urls.calendar },
+    { table:'venue_list',    url:urls.venue },
+    { table:'artist_hosted', url:urls.artist },
   ].filter(t => t.url);
-
   let synced = 0;
   for (const task of tasks) {
     try {
@@ -1221,23 +1251,120 @@ async function autoSyncOnLoad() {
       const headers = rows[0];
       const cmap = autoMap(headers, fields);
       const get = (row, key) => cmap[key]>=0 ? (row[cmap[key]]||'').trim() : '';
-      const records = rows.slice(1)
-        .filter(r => r.some(c=>c))
-        .map(row => {
-          const rec = {};
-          fields.forEach(f => { const v = get(row, f.key); if (v) rec[f.key] = v; });
-          return rec;
-        }).filter(r => Object.keys(r).length > 0);
-      if (records.length) {
-        await sb.from(task.table).upsert(records, { ignoreDuplicates: false });
-        synced += records.length;
-      }
-    } catch(e) { console.warn('Auto-sync failed for', task.label, e); }
+      const records = rows.slice(1).filter(r=>r.some(c=>c)).map(row => {
+        const rec = {};
+        fields.forEach(f => { const v = get(row, f.key); if (v) rec[f.key] = v; });
+        return rec;
+      }).filter(r => Object.keys(r).length > 0);
+      if (records.length) { await sb.from(task.table).upsert(records, {ignoreDuplicates:false}); synced += records.length; }
+    } catch(e) { console.warn('Auto-sync error:', e); }
   }
   if (synced > 0) showToast(`Auto-synced ${synced} rows from Sheets`);
 }
 
-// START
+// ═══════════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════════
+function exportCSV() {
+  const data = getFiltered();
+  const headers = ['Type','Name','Neighborhood','Area','Date','Day','Capacity','Format','Status','Artist','Lead','Lat','Lng','Notes'];
+  const rows = data.map(d => [
+    getLabel(d.type), `"${d.name}"`, `"${d.neighborhood}"`, `"${d.area}"`,
+    d.date, d.day, d.cap, `"${d.format}"`, `"${d.status}"`,
+    `"${d.artist||''}"`, `"${d.lead||''}"`, d.rawLat||'', d.rawLng||'',
+    `"${(d.notes||'').replace(/"/g,'""')}"`
+  ].join(','));
+  const blob = new Blob([[headers.join(','),...rows].join('\n')], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `sofar-la-${currentMonth}.csv`; a.click();
+  URL.revokeObjectURL(a.href);
+  showToast('CSV exported');
+}
+
+function exportNotes() {
+  const items = DATA.filter(d => d.notes && d.notes.trim());
+  if (!items.length) { showToast('No notes to export yet', true); return; }
+  const sorted = [...items].sort((a,b)=>a.date.localeCompare(b.date));
+  const dateStr = new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  const rows = sorted.map(item => {
+    const color = getColor(item.type);
+    return `<tr>
+      <td style="padding:10px 14px;border-bottom:1px solid #eee;white-space:nowrap;font-weight:600">${item.date!=='–'?item.date:'–'}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #eee;font-weight:600">${item.name}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #eee"><span style="background:${color}18;color:${color};padding:2px 7px;border-radius:3px;font-size:11px;font-weight:600">${getLabel(item.type)}</span></td>
+      <td style="padding:10px 14px;border-bottom:1px solid #eee;color:#666">${item.area||item.neighborhood}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #eee;color:#333;line-height:1.6">${item.notes}</td>
+    </tr>`;
+  }).join('');
+  const docHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Sofar LA — Notes ${dateStr}</title>
+  <style>body{font-family:Georgia,serif;max-width:960px;margin:40px auto;padding:0 24px;color:#1a1a1a}h1{font-size:28px;font-weight:300;margin-bottom:4px}h1 em{font-style:italic;color:#C48820}.sub{font-size:12px;color:#999;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:32px}table{width:100%;border-collapse:collapse;font-size:13px}th{background:#f5f3ee;padding:10px 14px;text-align:left;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#666;border-bottom:2px solid #ddd}</style>
+  </head><body>
+  <h1>Sofar <em>LA</em></h1>
+  <div class="sub">Notes Export · ${dateStr} · ${items.length} items</div>
+  <table><thead><tr><th>Date</th><th>Venue / Show</th><th>Type</th><th>Area</th><th>Notes</th></tr></thead>
+  <tbody>${rows}</tbody></table></body></html>`;
+  const blob = new Blob([docHtml], {type:'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `sofar-la-notes-${new Date().toISOString().split('T')[0]}.html`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  showToast(`Exported ${items.length} notes`);
+}
+
+// ═══════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════
+function setSyncState(state, label) {
+  const dot = document.getElementById('sdot');
+  const lbl = document.getElementById('sync-label');
+  dot.className = 'sdot' + (state==='syncing'?' syncing':state==='error'?' error':'');
+  lbl.textContent = label;
+}
+
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = (isError?'✗ ':'✓ ') + msg;
+  t.className = 'show' + (isError?' error':'');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.className='', 2500);
+}
+
+function openImport() {
+  parsedRows=[]; parsedHeaders=[];
+  document.getElementById('paste-input').value='';
+  document.getElementById('paste-preview').style.display='none';
+  document.getElementById('upload-preview').style.display='none';
+  document.getElementById('dz-text').innerHTML='Drop CSV here or click to browse<br><span style="color:var(--faint)">Sheets → File → Download → CSV</span>';
+  const urls = getSyncUrls();
+  if (document.getElementById('sync-cal-url')) document.getElementById('sync-cal-url').value=urls.calendar||'';
+  if (document.getElementById('sync-venue-url')) document.getElementById('sync-venue-url').value=urls.venue||'';
+  if (document.getElementById('sync-artist-url')) document.getElementById('sync-artist-url').value=urls.artist||'';
+  document.getElementById('sync-results').style.display='none';
+  document.getElementById('import-confirm-btn').style.display='';
+  openModal('import-modal');
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function switchTab(tab) {
+  importActive = tab;
+  document.querySelectorAll('.itab').forEach((t,i)=>t.classList.toggle('active',['paste','upload','sync'][i]===tab));
+  document.querySelectorAll('.itab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById('import-confirm-btn').style.display = tab==='sync' ? 'none' : '';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key==='Escape') { closeModal('import-modal'); closeDetail(); }
+});
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target===o) o.classList.remove('open'); });
+});
+
 boot();
 </script>
 </body>
