@@ -360,8 +360,8 @@ input[type="range"] { width: 100%; accent-color: var(--amber); height: 3px; }
     <button class="mnbtn" onclick="changeMonth(1)">›</button>
   </div>
   <div class="hright">
-    <button class="hbtn" onclick="refreshData()">↺ Sync</button>
-    <button class="hbtn amber" onclick="openImportSimple()">⇡ Import</button>
+    <button class="hbtn" onclick="refreshData()">↺ Refresh</button>
+    <button class="hbtn amber" onclick="syncSheetToSupabase()">⇡ Sync Sheet</button>
     <div id="sync-dot"></div>
   </div>
 </div>
@@ -511,7 +511,7 @@ const MAPS_KEY = 'AIzaSyA6OtNfq7KUOG98lO6YEWe1EpLVdqgC_oo';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── AIRTABLE ──
-const AT_TOKEN = 'pat6qOjB8qddJgZRN.840f4f36c8d62a01dd9e563eb589fbc9d0d3c69259a16290610702955f60a337';
+const AT_TOKEN = 'pat6qOjB8qddJgZRN.7dadaee7687edf723fbce487a586865d90132bab77c704651e6a3536cb02a4c0';
 const AT_BASE  = 'appFjmrBPpOKVSdpz';
 const AT_HEADERS = { 'Authorization': `Bearer ${AT_TOKEN}` };
 
@@ -570,6 +570,146 @@ function switchView(v) {
 // ══════════════════════════════════════════
 // DATA
 // ══════════════════════════════════════════
+// ══════════════════════════════════════════
+// GOOGLE SHEET CSV SYNC
+// ══════════════════════════════════════════
+const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRXEKW_VDhRLK_w-Qc2pZkeKnNooWMtN_FS5R-SST5H53x7pRVMLh67-knXU3Yeo6DDAfvQHqxweCno/pub?gid=1340075369&single=true&output=csv';
+
+function parseCSV(text) {
+  const parseRow = row => {
+    const result = []; let cur = ''; let inQ = false;
+    for (let i = 0; i < row.length; i++) {
+      const c = row[i];
+      if (c === '"') { inQ = !inQ; }
+      else if (c === ',' && !inQ) { result.push(cur.trim()); cur = ''; }
+      else { cur += c; }
+    }
+    result.push(cur.trim());
+    return result.map(v => v.replace(/^"|"$/g,'').trim());
+  };
+  const lines = text.split('\n').filter(l => l.trim());
+  if (lines.length < 2) return [];
+  const headers = parseRow(lines[0]);
+  return lines.slice(1).map(line => {
+    const vals = parseRow(line);
+    const obj = {};
+    headers.forEach((h,i) => { obj[h] = vals[i] || ''; });
+    return obj;
+  });
+}
+
+function findCol(row, ...candidates) {
+  // Case-insensitive, partial match column finder
+  for (const cand of candidates) {
+    const key = Object.keys(row).find(k =>
+      k.toLowerCase().replace(/[^a-z0-9]/g,'').includes(
+        cand.toLowerCase().replace(/[^a-z0-9]/g,'')
+      )
+    );
+    if (key && row[key] !== undefined) return row[key];
+  }
+  return '';
+}
+
+function parseSheetDate(raw) {
+  if (!raw) return null;
+  // Handle M/D/YYYY or YYYY-MM-DD
+  const mdy = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (mdy) return `${mdy[3]}-${mdy[1].padStart(2,'0')}-${mdy[2].padStart(2,'0')}`;
+  const iso = raw.match(/^\d{4}-\d{2}-\d{2}$/);
+  if (iso) return raw;
+  return null;
+}
+
+async function syncSheetToSupabase(silent=false) {
+  try {
+    if (!silent) showToast('Syncing from Google Sheets...');
+    const res = await fetch(SHEET_CSV_URL);
+    if (!res.ok) throw new Error('CSV fetch failed: ' + res.status);
+    const text = await res.text();
+    const rows = parseCSV(text);
+
+    // Filter to rows with a parseable date
+    const valid = rows.filter(r => {
+      const d = findCol(r, 'date');
+      const parsed = parseSheetDate(d);
+      if (!parsed) return false;
+      // Skip header-like rows or placeholder rows
+      const venue = findCol(r, 'venue');
+      const type = findCol(r, 'type');
+      return type || venue; // at least one of these must exist
+    });
+
+    if (!valid.length) {
+      showToast('No valid rows found in sheet', true);
+      return;
+    }
+
+    // Build upsert rows for 2026_calendar
+    const upsertRows = valid.map(r => {
+      const dateRaw = findCol(r, 'date');
+      const date = parseSheetDate(dateRaw);
+      const venue = findCol(r, 'venue');
+      const neighborhood = findCol(r, 'neighborhood');
+      const type = findCol(r, 'type');
+      const area = findCol(r, 'area');
+      const dow = findCol(r, 'day of week', 'dayofweek', 'dow', 'day');
+      const showLead = findCol(r, 'show lead', 'showlead', 'lead');
+      const artistHost = findCol(r, 'artist host', 'artisthost', 'host');
+      const notes = findCol(r, 'notes');
+      const marketingNotes = findCol(r, 'marketing notes', 'marketingnotes');
+      const uploaded = findCol(r, 'uploaded', 'event planner');
+      const merch = findCol(r, 'merch', 'merchandising');
+
+      // Generate a stable ID from date+venue so upsert works correctly
+      const stableKey = `${date}_${venue.toLowerCase().replace(/[^a-z0-9]/g,'_').substring(0,30)}`;
+
+      return {
+        sheet_key: stableKey,
+        date,
+        day_of_week: dow,
+        venue: venue || null,
+        neighborhood: neighborhood || null,
+        type: type || null,
+        area: area || null,
+        artist_host: artistHost || null,
+        show_lead: showLead || null,
+        notes: notes || null,
+        marketing_notes: marketingNotes || null,
+        uploaded_to_planner: uploaded === 'TRUE' || uploaded === 'true' || uploaded === '1',
+        merch_completed: merch === 'TRUE' || merch === 'true' || merch === '1',
+      };
+    });
+
+    // Upsert in batches of 50
+    let successCount = 0;
+    const BATCH = 50;
+    for (let i = 0; i < upsertRows.length; i += BATCH) {
+      const batch = upsertRows.slice(i, i + BATCH);
+      const { error } = await sb.from('2026_calendar')
+        .upsert(batch, { onConflict: 'sheet_key', ignoreDuplicates: false });
+      if (error) {
+        console.error('Upsert error:', error);
+        // If sheet_key column doesn't exist yet, fall back to insert
+        if (error.code === '42703') {
+          showToast('Run schema update first — see console', true);
+          console.log('Need to add sheet_key column. Run in Supabase SQL editor:\nalter table "public"."2026_calendar" add column if not exists sheet_key text unique;');
+          return;
+        }
+      } else {
+        successCount += batch.length;
+      }
+    }
+
+    if (!silent) showToast(`Synced ${successCount} shows from Google Sheets ✓`);
+    // Reload data to reflect changes
+    await loadData();
+  } catch(e) {
+    console.error('Sheet sync error:', e);
+    showToast('Sheet sync failed: ' + e.message, true); // always show errors
+  }
+}
+
 async function loadData() {
   setSyncState('syncing');
   const [sched, venues, artists] = await Promise.all([
@@ -1530,6 +1670,12 @@ document.addEventListener('keydown', e => {
 loadMap();
 renderWeek();
 loadAirtableData();
+
+// Auto-sync from Google Sheet every 5 minutes, silently
+syncSheetToSupabase(true);
+setInterval(() => {
+  syncSheetToSupabase(true);
+}, 5 * 60 * 1000);
 </script>
 <!-- Browse Notes Modal -->
 <div id="browse-overlay" onclick="if(event.target===this)closeBrowse()">
