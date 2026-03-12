@@ -43,6 +43,9 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 .month-nav { display: flex; align-items: center; gap: 8px; }
 .mnbtn { background: none; border: 1px solid var(--border2); color: var(--muted); border-radius: 3px; width: 24px; height: 24px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
 .mnbtn:hover { border-color: var(--amber); color: var(--amber); }
+.map-view-toggle { display: flex; gap: 2px; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 2px; }
+.mvt-btn { background: none; border: none; color: var(--muted); border-radius: 3px; padding: 3px 10px; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; }
+.mvt-btn.active { background: var(--surface); color: var(--amber); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
 #month-label { font-size: 12px; color: var(--text); min-width: 110px; text-align: center; }
 
 .hright { margin-left: auto; display: flex; align-items: center; gap: 10px; }
@@ -355,9 +358,13 @@ input[type="range"] { width: 100%; accent-color: var(--amber); height: 3px; }
   </div>
   <div class="hdiv"></div>
   <div class="month-nav">
-    <button class="mnbtn" onclick="changeMonth(-1)">‹</button>
+    <button class="mnbtn" onclick="navBack()">‹</button>
     <span id="month-label">March 2026</span>
-    <button class="mnbtn" onclick="changeMonth(1)">›</button>
+    <button class="mnbtn" onclick="navForward()">›</button>
+  </div>
+  <div class="map-view-toggle" id="map-view-toggle">
+    <button class="mvt-btn active" id="mvt-month" onclick="setMapViewMode('month')">Month</button>
+    <button class="mvt-btn" id="mvt-week" onclick="setMapViewMode('week')">Week</button>
   </div>
   <div class="hright">
     <button class="hbtn" onclick="refreshData()">↺ Refresh</button>
@@ -405,6 +412,7 @@ input[type="range"] { width: 100%; accent-color: var(--amber); height: 3px; }
           <div class="dp-row"><div class="dp-label">Type</div><div class="dp-val" id="dp-format"></div></div>
           <div class="dp-row"><div class="dp-label">Status</div><div class="dp-val" id="dp-status"></div></div>
           <div class="dp-row" id="dp-lead-row"><div class="dp-label">Show Lead</div><div class="dp-val" id="dp-lead"></div></div>
+          <div class="dp-row" id="dp-lineup-row" style="display:none"><div class="dp-label">Lineup</div><div class="dp-val" id="dp-lineup" style="color:var(--teal);font-size:11px;line-height:1.5"></div></div>
           <div class="dp-div"></div>
           <div id="dp-at-notes-block" style="display:none">
             <div class="dp-at-notes">
@@ -545,6 +553,8 @@ let DATA = [], map = null, markers = {}, selectedId = null;
 let layerVisible = {}, capMin = 0, capMax = 300;
 let currentMonth = '2026-03', filterOpen = false;
 let weekOffset = 0;
+let mapViewMode = 'month'; // 'month' or 'week'
+let mapWeekStart = new Date(); // current week for map
 let chatMessages = [], chatLoading = false;
 LAYERS.forEach(l => layerVisible[l.id] = true);
 
@@ -810,12 +820,79 @@ window.initMap = function() {
   loadData();
 };
 
+function getWeekRange(weekStart) {
+  const start = new Date(weekStart); start.setHours(0,0,0,0);
+  const end = new Date(start); end.setDate(start.getDate()+6); end.setHours(23,59,59,999);
+  return {start, end};
+}
+
+function fmtWeekLabel(weekStart) {
+  const {start, end} = getWeekRange(weekStart);
+  const mo = d => d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  return `${mo(start)} – ${mo(end)}`;
+}
+
+function setMapViewMode(mode) {
+  mapViewMode = mode;
+  // Sync mapWeekStart to currentWeekStart if switching to week
+  if (mode === 'week') {
+    mapWeekStart = new Date(currentWeekStart);
+    mapWeekStart.setHours(0,0,0,0);
+  }
+  document.getElementById('mvt-month').classList.toggle('active', mode==='month');
+  document.getElementById('mvt-week').classList.toggle('active', mode==='week');
+  updateNavLabel();
+  renderAll();
+}
+
+function updateNavLabel() {
+  const el = document.getElementById('month-label');
+  if (mapViewMode === 'week') {
+    el.textContent = fmtWeekLabel(mapWeekStart);
+  } else {
+    const [y,m] = currentMonth.split('-').map(Number);
+    el.textContent = new Date(y,m-1,1).toLocaleString('default',{month:'long',year:'numeric'});
+  }
+}
+
+function navBack() {
+  if (mapViewMode === 'week') {
+    mapWeekStart = new Date(mapWeekStart);
+    mapWeekStart.setDate(mapWeekStart.getDate()-7);
+    updateNavLabel(); renderAll();
+  } else {
+    changeMonth(-1);
+  }
+}
+
+function navForward() {
+  if (mapViewMode === 'week') {
+    mapWeekStart = new Date(mapWeekStart);
+    mapWeekStart.setDate(mapWeekStart.getDate()+7);
+    updateNavLabel(); renderAll();
+  } else {
+    changeMonth(1);
+  }
+}
+
 function getFiltered() {
   return DATA.filter(d => {
-    const mOk = d.month==='all'||d.month===currentMonth;
-    const lOk = layerVisible[d.type]!==false;
+    let timeOk;
+    if (d.month === 'all') {
+      timeOk = true;
+    } else if (mapViewMode === 'week') {
+      if (!d.rawDate) { timeOk = false; }
+      else {
+        const {start, end} = getWeekRange(mapWeekStart);
+        const dt = new Date(d.rawDate);
+        timeOk = dt >= start && dt <= end;
+      }
+    } else {
+      timeOk = d.month === currentMonth;
+    }
+    const lOk = layerVisible[d.type] !== false;
     const cOk = (capMin===0&&capMax>=300)||!d.cap||(d.cap>=capMin&&d.cap<=capMax);
-    return mOk&&lOk&&cOk;
+    return timeOk && lOk && cOk;
   });
 }
 
@@ -898,9 +975,22 @@ function renderSidebar(data) {
 
 function sidebarItemHTML(item) {
   const color=getColor(item.type), sel=selectedId===item.id;
+  // Try to find artist lineup from Airtable
+  let lineupStr = '';
+  if (item.rawDate && atLoaded) {
+    const atEv = AT_EVENTS.find(e =>
+      e['Venue Name'] && e['Venue Name'].toLowerCase().trim()===item.name.toLowerCase().trim() &&
+      e['Show Date']===item.rawDate
+    );
+    if (atEv && atEv['Lineup']) {
+      const artists = atEv['Lineup'].split(',').map(a=>a.trim()).filter(Boolean);
+      lineupStr = artists.slice(0,3).join(' · ');
+    }
+  }
   return `<div class="list-item ${sel?'sel':''}" style="border-left-color:${color}" onclick="selectMapItem('${item.id}')">
     <div class="li-name">${item.name}${item.notes?'  📝':''}</div>
-    <div class="li-meta"><span class="badge" style="background:${color}16;color:${color}">${getLabel(item.type)}</span></div>
+    <div class="li-meta"><span class="badge" style="background:${color}16;color:${color}">${getLabel(item.type)}</span>${item.day?`<span style="font-size:10px;color:var(--muted);margin-left:6px">${item.day}</span>`:''}</div>
+    ${lineupStr?`<div class="li-sub" style="color:var(--teal)">${lineupStr}</div>`:''}
     <div class="li-sub">${item.neighborhood}${item.area&&item.area!==item.neighborhood?' · '+item.area:''}${item.cap?' · '+item.cap+' cap':''}</div>
   </div>`;
 }
@@ -925,6 +1015,28 @@ function selectMapItem(id) {
   document.getElementById('dp-lead').textContent=item.lead;
   document.getElementById('dp-notes').value=item.notes||'';
   document.getElementById('dp-save').textContent='Save to Database';
+
+  // Show artist lineup from Airtable if available
+  const lineupEl = document.getElementById('dp-lineup-row');
+  const lineupVal = document.getElementById('dp-lineup');
+  if (item.rawDate && item.name && item.name !== '–') {
+    const atEvent = AT_EVENTS.find(e => {
+      const nameMatch = e['Venue Name'] && e['Venue Name'].toLowerCase().trim() === item.name.toLowerCase().trim();
+      const dateMatch = e['Show Date'] === item.rawDate;
+      return nameMatch && dateMatch;
+    });
+    if (atEvent && atEvent['Lineup']) {
+      const lineup = atEvent['Lineup'].split(',').map(a=>a.trim()).filter(Boolean);
+      lineupVal.textContent = lineup.join(' · ');
+      lineupEl.style.display = '';
+    } else {
+      lineupEl.style.display = 'none';
+    }
+  } else {
+    lineupEl.style.display = 'none';
+  }
+
+  showAtNotesInPanel(item.name);
   renderSidebar(getFiltered());
 }
 
@@ -967,7 +1079,7 @@ function changeMonth(dir) {
   const [y,m]=currentMonth.split('-').map(Number);
   const d=new Date(y,m-1+dir,1);
   currentMonth=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-  document.getElementById('month-label').textContent=d.toLocaleString('default',{month:'long',year:'numeric'});
+  updateNavLabel();
   renderAll(); renderWeek();
 }
 async function refreshData() {
@@ -1311,7 +1423,12 @@ async function sendChat() {
   try {
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':'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',
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true',
+      },
       body:JSON.stringify({
         model:'claude-haiku-4-5-20251001',
         max_tokens:1000,
@@ -1667,6 +1784,13 @@ document.addEventListener('keydown', e => {
 });
 
 // ── BOOT ──
+// Set mapWeekStart to Monday of current week
+const _today = new Date(); _today.setHours(0,0,0,0);
+const _dow = _today.getDay(); // 0=Sun
+const _diff = _dow === 0 ? -6 : 1 - _dow;
+mapWeekStart = new Date(_today); mapWeekStart.setDate(_today.getDate() + _diff);
+currentWeekStart = new Date(mapWeekStart);
+
 loadMap();
 renderWeek();
 loadAirtableData();
