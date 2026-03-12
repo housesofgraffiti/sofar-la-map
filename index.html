@@ -3,423 +3,517 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sofar LA — Show & Venue Map</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<title>Sofar LA — Operations</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --bg: #F5F3EE;
-  --surface: #FFFFFF;
-  --surface2: #F0EDE6;
-  --surface3: #E8E4DA;
-  --border: #E0DCD2;
-  --border2: #C8C4BA;
-  --text: #1A1814;
-  --muted: #8A8278;
-  --faint: #C8C4BA;
-  --sidebar-w: 300px;
-  --detail-w: 340px;
-  --header-h: 52px;
-  --artist: #C48820;
-  --regular: #2A9F84;
-  --partnership: #C84A28;
-  --pipeline: #5A80C8;
-  --outdoor: #5A9840;
-  --hosted: #9A4AC8;
+  --bg: #F5F3EE; --surface: #FFFFFF; --surface2: #F0EDE6; --surface3: #E8E3D8;
+  --border: #E0DCD2; --border2: #C8C4BA; --text: #1A1814; --muted: #8A8278; --faint: #C8C4BA;
+  --amber: #C48820; --teal: #2A9F84; --coral: #C84A28; --blue: #5A80C8; --green: #5A9840; --purple: #9A4AC8;
+  --header-h: 54px;
 }
-html, body { height: 100%; overflow: hidden; }
-body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; font-size: 13px; }
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-
-/* ── LOADING ── */
-#loading-screen {
-  position: fixed; inset: 0; background: var(--bg);
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; z-index: 1000;
-}
-.loading-logo { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 300; letter-spacing: -0.02em; color: var(--text); }
-.loading-logo em { font-style: italic; color: var(--artist); }
-.loading-bar { width: 200px; height: 2px; background: var(--border); border-radius: 1px; overflow: hidden; }
-.loading-fill { height: 100%; background: var(--artist); width: 0; transition: width 0.4s ease; border-radius: 1px; }
-.loading-status { font-size: 11px; color: var(--muted); letter-spacing: 0.08em; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; font-size: 13px; overflow: hidden; }
+::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
 /* ── HEADER ── */
 #header {
   position: fixed; top: 0; left: 0; right: 0; height: var(--header-h);
   background: var(--surface); border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; padding: 0 16px; gap: 14px; z-index: 100;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  display: flex; align-items: center; padding: 0 20px; gap: 16px; z-index: 200;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
-.logo { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 300; letter-spacing: -0.02em; white-space: nowrap; }
-.logo em { font-style: italic; color: var(--artist); }
-.hdiv { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
+.logo { font-family: 'Fraunces', serif; font-size: 19px; font-weight: 300; letter-spacing: -0.02em; white-space: nowrap; }
+.logo em { font-style: italic; color: var(--amber); }
+.hdiv { width: 1px; height: 22px; background: var(--border); flex-shrink: 0; }
+
+/* NAV TABS */
+.nav-tabs { display: flex; gap: 2px; }
+.nav-tab {
+  padding: 6px 16px; border-radius: 4px; font-family: 'DM Mono', monospace;
+  font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase;
+  cursor: pointer; color: var(--muted); border: none; background: none;
+  transition: all 0.15s; display: flex; align-items: center; gap: 6px;
+}
+.nav-tab:hover { color: var(--text); background: var(--surface2); }
+.nav-tab.active { color: var(--amber); background: rgba(196,136,32,0.08); }
+.nav-tab .tab-icon { font-size: 13px; }
+
 .month-nav { display: flex; align-items: center; gap: 8px; }
 .mnbtn { background: none; border: 1px solid var(--border2); color: var(--muted); border-radius: 3px; width: 24px; height: 24px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
-.mnbtn:hover { border-color: var(--artist); color: var(--artist); }
-#month-label { font-size: 12px; color: var(--text); letter-spacing: 0.05em; min-width: 110px; text-align: center; }
-.view-toggle { display: flex; border: 1px solid var(--border2); border-radius: 3px; overflow: hidden; }
-.vbtn { background: none; border: none; padding: 5px 12px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); cursor: pointer; letter-spacing: 0.06em; text-transform: uppercase; transition: all 0.15s; }
-.vbtn.active { background: var(--artist); color: #fff; }
-.hright { margin-left: auto; display: flex; align-items: center; gap: 8px; }
-.hbtn { background: none; border: 1px solid var(--border2); color: var(--muted); border-radius: 3px; padding: 5px 12px; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
-.hbtn:hover { color: var(--text); border-color: var(--border2); }
-.hbtn.teal:hover { color: var(--regular); border-color: var(--regular); }
-.hbtn.amber:hover { color: var(--artist); border-color: var(--artist); }
-#sync-indicator { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
-.sdot { width: 7px; height: 7px; border-radius: 50%; background: var(--regular); box-shadow: 0 0 4px rgba(42,159,132,0.5); flex-shrink: 0; }
-.sdot.syncing { background: var(--artist); animation: pulse 1s infinite; }
-.sdot.error { background: var(--partnership); }
+.mnbtn:hover { border-color: var(--amber); color: var(--amber); }
+#month-label { font-size: 12px; color: var(--text); min-width: 110px; text-align: center; }
+
+.hright { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.hbtn { background: none; border: 1px solid var(--border2); color: var(--muted); border-radius: 3px; padding: 5px 12px; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; }
+.hbtn:hover { color: var(--text); }
+.hbtn.amber { border-color: rgba(196,136,32,0.4); color: var(--amber); }
+#sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 4px rgba(42,159,132,0.5); }
+#sync-dot.syncing { background: var(--amber); animation: pulse 1s infinite; }
 @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
 
-/* ── LAYOUT ── */
-#app { display: none; height: 100%; padding-top: var(--header-h); }
-#layout { display: flex; height: 100%; }
+/* ── VIEWS ── */
+#app { padding-top: var(--header-h); height: 100vh; }
+.view { display: none; height: 100%; }
+.view.active { display: flex; }
 
-/* ── SIDEBAR ── */
-#sidebar { width: var(--sidebar-w); flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
-.sb-sec { padding: 13px 15px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.sb-title { font-size: 10px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; }
+/* ══════════════════════════════════════════
+   MAP VIEW
+══════════════════════════════════════════ */
+#view-map { flex-direction: row; }
+
+#sidebar {
+  width: 290px; flex-shrink: 0; background: var(--surface);
+  border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden;
+}
+.sb-header { padding: 12px 15px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.sb-count { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+.filter-btn { background: none; border: 1px solid var(--border2); color: var(--muted); border-radius: 3px; padding: 4px 10px; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; }
+.filter-btn:hover { color: var(--amber); border-color: var(--amber); }
+
+#item-list { flex: 1; overflow-y: auto; padding: 4px 0; }
+.list-date-group { padding: 10px 15px 4px; display: flex; align-items: baseline; gap: 8px; border-top: 1px solid var(--border); margin-top: 4px; }
+.list-date-group:first-child { border-top: none; margin-top: 0; }
+.ldg-num { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 300; color: var(--text); line-height: 1; }
+.ldg-label { font-size: 10px; color: var(--muted); letter-spacing: 0.07em; text-transform: uppercase; }
+.ldg-num.today { color: var(--amber); }
+.list-item { padding: 7px 15px 7px 18px; cursor: pointer; border-left: 3px solid transparent; transition: all 0.12s; }
+.list-item:hover { background: var(--surface2); }
+.list-item.sel { background: var(--surface2); }
+.li-name { font-size: 12px; color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.li-meta { display: flex; gap: 6px; align-items: center; margin-top: 2px; flex-wrap: wrap; }
+.badge { font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 6px; border-radius: 2px; font-weight: 500; }
+.li-sub { font-size: 10px; color: var(--muted); margin-top: 1px; }
+.list-empty { padding: 30px 15px; text-align: center; color: var(--muted); font-size: 12px; font-style: italic; }
+
+#map-wrap { flex: 1; position: relative; }
+#map { width: 100%; height: 100%; }
+
+/* Detail panel */
+#detail-panel {
+  width: 0; overflow: hidden; background: var(--surface); border-left: 1px solid var(--border);
+  flex-direction: column; transition: width 0.25s cubic-bezier(0.4,0,0.2,1); flex-shrink: 0;
+}
+#detail-panel.open { width: 330px; }
+.dp-inner { width: 330px; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+.dp-head { padding: 16px 16px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.dp-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; float: right; }
+.dp-type { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; font-weight: 500; }
+.dp-name { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 2px; clear: both; }
+.dp-hood { font-size: 11px; color: var(--muted); }
+.dp-body { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.dp-row { display: flex; flex-direction: column; gap: 2px; }
+.dp-label { font-size: 9px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+.dp-val { font-size: 12px; color: var(--text); }
+.dp-div { height: 1px; background: var(--border); }
+.dp-notes { width: 100%; min-height: 90px; background: var(--bg); border: 1px solid var(--border2); border-radius: 3px; padding: 8px 10px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); resize: none; outline: none; line-height: 1.6; }
+.dp-notes:focus { border-color: var(--amber); }
+.dp-save { width: 100%; background: var(--surface2); border: 1px solid var(--border2); color: var(--muted); border-radius: 3px; padding: 7px; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; margin-top: 6px; transition: all 0.15s; }
+.dp-save:hover { color: var(--teal); border-color: var(--teal); }
+.dp-at-notes { background: rgba(90,128,200,0.06); border: 1px solid rgba(90,128,200,0.2); border-left: 3px solid var(--blue); border-radius: 4px; padding: 9px 12px; margin-bottom: 10px; }
+.dp-at-notes-label { font-size: 9px; color: var(--blue); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 5px; }
+.dp-at-notes-text { font-size: 11px; color: var(--muted); line-height: 1.7; font-style: italic; }
+.dp-notes-prompts { font-size: 10px; color: var(--faint); line-height: 1.4; margin-bottom: 4px; }
+.dp-notes-label-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.dp-notes-browse { background: none; border: 1px solid var(--border2); color: var(--muted); border-radius: 3px; padding: 3px 8px; font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.07em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; }
+.dp-notes-browse:hover { color: var(--amber); border-color: var(--amber); }
+.dp-notes { width: 100%; min-height: 110px; background: var(--bg); border: 1px solid var(--border2); border-radius: 3px; padding: 9px 10px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text); resize: none; outline: none; line-height: 1.8; }
+.dp-notes:focus { border-color: var(--amber); }
+.dp-notes-char { font-size: 9px; color: var(--faint); text-align: right; margin-top: 2px; }
+/* Browse mode */
+#browse-overlay { display: none; position: fixed; inset: 0; background: rgba(26,24,20,0.5); z-index: 500; align-items: center; justify-content: center; }
+#browse-overlay.open { display: flex; }
+#browse-modal { background: var(--surface); border-radius: 8px; width: 560px; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 8px 40px rgba(0,0,0,0.2); }
+.bm-head { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.bm-title { font-family: 'Fraunces', serif; font-size: 16px; font-weight: 600; }
+.bm-title em { font-style: italic; color: var(--amber); }
+.bm-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 20px; }
+.bm-progress { padding: 10px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.bm-prog-bar { flex: 1; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.bm-prog-fill { height: 100%; background: var(--amber); border-radius: 2px; transition: width 0.3s; }
+.bm-prog-text { font-size: 10px; color: var(--muted); white-space: nowrap; }
+.bm-body { flex: 1; overflow-y: auto; padding: 20px; }
+.bm-venue-name { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; margin-bottom: 3px; }
+.bm-venue-meta { font-size: 11px; color: var(--muted); margin-bottom: 14px; }
+.bm-at-notes { background: rgba(90,128,200,0.06); border: 1px solid rgba(90,128,200,0.15); border-left: 3px solid var(--blue); border-radius: 4px; padding: 9px 12px; margin-bottom: 14px; font-size: 11px; color: var(--muted); font-style: italic; line-height: 1.7; }
+.bm-at-label { font-size: 9px; color: var(--blue); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+.bm-prompt { font-size: 10px; color: var(--faint); margin-bottom: 6px; line-height: 1.8; }
+.bm-textarea { width: 100%; min-height: 130px; background: var(--bg); border: 1px solid var(--border2); border-radius: 4px; padding: 10px 12px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); resize: none; outline: none; line-height: 1.8; }
+.bm-textarea:focus { border-color: var(--amber); }
+.bm-foot { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; flex-shrink: 0; }
+.bm-btn { flex: 1; padding: 9px; border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; border: 1px solid var(--border2); background: var(--surface2); color: var(--muted); }
+.bm-btn:hover { color: var(--text); }
+.bm-btn.primary { background: var(--amber); color: #fff; border-color: var(--amber); }
+.bm-btn.primary:hover { opacity: 0.88; }
+.bm-skip { color: var(--muted); font-size: 10px; background: none; border: none; cursor: pointer; }
+.bm-skip:hover { color: var(--text); }
+
+/* Filter drawer */
+#filter-drawer {
+  position: absolute; top: 0; left: 290px; bottom: 0; width: 230px;
+  background: var(--surface); border-right: 1px solid var(--border);
+  transform: translateX(-100%); opacity: 0; pointer-events: none;
+  transition: transform 0.2s, opacity 0.2s; z-index: 10;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.07); display: flex; flex-direction: column;
+}
+#filter-drawer.open { transform: translateX(0); opacity: 1; pointer-events: all; }
+.fd-head { padding: 12px 15px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.fd-title { font-size: 10px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
+.fd-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; }
+.fd-body { padding: 14px 15px; overflow-y: auto; flex: 1; }
+.fd-sec-label { font-size: 10px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; }
 .layer-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
-.layer-left { display: flex; align-items: center; gap: 9px; }
-.ldot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-.lname { font-size: 12px; color: var(--text); }
-.lcount { font-size: 10px; color: var(--muted); margin-left: 3px; }
-.toggle { position: relative; width: 30px; height: 17px; cursor: pointer; flex-shrink: 0; }
+.layer-left { display: flex; align-items: center; gap: 8px; }
+.ldot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.lname { font-size: 12px; }
+.lcount { font-size: 10px; color: var(--muted); }
+.toggle { position: relative; width: 30px; height: 17px; cursor: pointer; }
 .toggle input { display: none; }
 .ttrack { position: absolute; inset: 0; background: var(--border); border-radius: 9px; transition: background 0.2s; }
 .toggle input:checked + .ttrack { background: var(--border2); }
 .tthumb { position: absolute; top: 3px; left: 3px; width: 11px; height: 11px; border-radius: 50%; background: var(--muted); transition: all 0.2s; pointer-events: none; }
 .toggle input:checked + .ttrack + .tthumb { left: 16px; background: var(--text); }
-.cap-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
-.cap-val { font-size: 12px; color: var(--text); }
-input[type="range"] { width: 100%; accent-color: var(--artist); height: 3px; }
-#item-list { flex: 1; overflow-y: auto; padding: 4px 0; }
-.list-gl { padding: 8px 15px 3px; font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
-.list-item { padding: 9px 15px; cursor: pointer; border-left: 2px solid transparent; transition: all 0.12s; }
-.list-item:hover { background: var(--surface2); }
-.list-item.active { background: var(--surface2); }
-.li-name { font-size: 12px; color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
-.li-meta { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
-.badge { font-size: 9px; letter-spacing: 0.07em; text-transform: uppercase; padding: 2px 6px; border-radius: 2px; white-space: nowrap; font-weight: 500; }
-.li-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
-.list-empty { padding: 24px 15px; font-size: 12px; color: var(--muted); text-align: center; font-style: italic; }
+.cap-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px; }
+input[type="range"] { width: 100%; accent-color: var(--amber); height: 3px; }
 
-/* ── MAP ── */
-#map-wrap { flex: 1; position: relative; overflow: hidden; }
-#map { width: 100%; height: 100%; background: var(--bg); }
+/* ══════════════════════════════════════════
+   WEEK VIEW
+══════════════════════════════════════════ */
+#view-week { flex-direction: column; overflow: hidden; }
+.week-toolbar { padding: 12px 24px; border-bottom: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+.week-nav { display: flex; align-items: center; gap: 8px; }
+.wnbtn { background: none; border: 1px solid var(--border2); color: var(--muted); border-radius: 3px; width: 26px; height: 26px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+.wnbtn:hover { border-color: var(--amber); color: var(--amber); }
+.week-range { font-size: 12px; color: var(--text); min-width: 180px; }
+.week-stat { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); margin-left: 8px; }
+.wstat-pip { width: 7px; height: 7px; border-radius: 50%; }
+.wstat-num { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 300; color: var(--text); }
 
-/* ── LIST VIEW ── */
-#list-view { display: none; position: absolute; inset: 0; background: var(--bg); overflow-y: auto; padding: 24px 28px; }
-#list-view.active { display: block; }
-.lv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
-.cal-view { display: flex; flex-direction: column; gap: 0; }
-.cal-week { margin-bottom: 28px; }
-.cal-week-label { font-size: 10px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; padding: 0 0 10px; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
-.cal-day-row { display: grid; grid-template-columns: 80px 1fr; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--border); align-items: start; }
-.cal-day-row:last-child { border-bottom: none; }
-.cal-day-label { display: flex; flex-direction: column; align-items: flex-end; padding-top: 2px; flex-shrink: 0; }
-.cal-day-name { font-size: 10px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
-.cal-day-num { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 300; color: var(--text); line-height: 1; }
-.cal-day-num.today { color: var(--artist); }
-.cal-shows { display: flex; flex-direction: column; gap: 7px; }
-.cal-show-chip { border-radius: 4px; padding: 9px 14px; cursor: pointer; transition: all 0.15s; border-left: 3px solid transparent; background: var(--surface); border: 1px solid var(--border); border-left-width: 3px; }
-.cal-show-chip:hover { background: var(--surface2); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
-.cal-show-name { font-size: 13px; color: var(--text); font-weight: 500; margin-bottom: 3px; }
-.cal-show-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.cal-show-note { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 5px; line-height: 1.5; }
-.cal-empty { font-size: 11px; color: var(--faint); padding: 6px 0; font-style: italic; }
-.view-mode-toggle { display: flex; border: 1px solid var(--border2); border-radius: 3px; overflow: hidden; margin-bottom: 20px; width: fit-content; }
-.vm-btn { background: none; border: none; padding: 5px 14px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); cursor: pointer; letter-spacing: 0.06em; text-transform: uppercase; transition: all 0.15s; }
-.vm-btn.active { background: var(--surface); color: var(--text); border: 1px solid var(--border2); }
-.lv-card { background: var(--surface); border: 1px solid var(--border); border-left-width: 3px; border-radius: 4px; padding: 14px; cursor: pointer; transition: all 0.15s; }
-.lv-card:hover { background: var(--surface2); box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
-.lv-name { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 600; margin-bottom: 5px; letter-spacing: -0.01em; }
-.lv-meta { display: flex; gap: 7px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
-.lv-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.lv-fl { font-size: 9px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
-.lv-fv { font-size: 12px; color: var(--text); }
-.lv-note { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted); font-style: italic; }
+.week-body { flex: 1; display: flex; overflow: hidden; }
+.week-main { flex: 1; overflow-y: auto; padding: 20px 24px; }
+.week-detail { width: 340px; flex-shrink: 0; background: var(--surface); border-left: 1px solid var(--border); overflow-y: auto; }
 
-/* ── DETAIL PANEL ── */
-#detail-panel { width: 0; overflow: hidden; background: var(--surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; transition: width 0.25s cubic-bezier(0.4,0,0.2,1); flex-shrink: 0; }
-#detail-panel.open { width: var(--detail-w); }
-.dp-inner { width: var(--detail-w); height: 100%; display: flex; flex-direction: column; overflow: hidden; }
-.dp-head { padding: 16px 16px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--surface); }
-.dp-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; float: right; transition: color 0.15s; }
-.dp-close:hover { color: var(--text); }
-.dp-type { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 5px; font-weight: 500; }
-.dp-name { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; line-height: 1.2; letter-spacing: -0.01em; margin-bottom: 3px; clear: both; }
-.dp-hood { font-size: 11px; color: var(--muted); }
-.dp-body { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
-.dp-field { display: flex; flex-direction: column; gap: 3px; }
-.dp-fl { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
-.dp-fv { font-size: 13px; color: var(--text); }
-.dp-divider { height: 1px; background: var(--border); }
-.dp-notes { width: 100%; min-height: 100px; background: var(--bg); border: 1px solid var(--border2); border-radius: 3px; padding: 9px 11px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); resize: vertical; outline: none; line-height: 1.6; transition: border-color 0.15s; }
-.dp-notes:focus { border-color: var(--artist); }
-.dp-notes::placeholder { color: var(--faint); }
-.dp-save { width: 100%; background: var(--surface2); border: 1px solid var(--border2); color: var(--muted); border-radius: 3px; padding: 8px; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; margin-top: 7px; transition: all 0.15s; }
-.dp-save:hover, .dp-save.saved { border-color: var(--regular); color: var(--regular); background: rgba(42,159,132,0.06); }
-.dp-live-badge { font-size: 10px; color: var(--regular); text-align: center; padding-top: 5px; }
-.coord-hint { font-size: 10px; color: var(--pipeline); line-height: 1.6; background: rgba(90,128,200,0.07); border: 1px solid rgba(90,128,200,0.2); border-radius: 3px; padding: 8px 10px; margin-top: 4px; }
+/* alert banner */
+.alert-banner { display: flex; gap: 10px; align-items: flex-start; border-radius: 4px; padding: 10px 14px; margin-bottom: 16px; font-size: 11px; line-height: 1.7; }
+.alert-banner.coral { background: rgba(200,74,40,0.06); border: 1px solid rgba(200,74,40,0.2); border-left: 3px solid var(--coral); color: var(--muted); }
+.alert-banner.amber { background: rgba(196,136,32,0.06); border: 1px solid rgba(196,136,32,0.2); border-left: 3px solid var(--amber); color: var(--muted); }
+.alert-banner strong { color: var(--text); }
 
-/* ── MODAL ── */
-.modal-overlay { position: fixed; inset: 0; background: rgba(26,24,20,0.5); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
-.modal-overlay.open { display: flex; }
-.modal { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; width: 100%; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; max-width: 600px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); }
-.modal-head { padding: 20px 24px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; flex-shrink: 0; }
-.modal-title { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
-.modal-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
-.modal-close { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; padding: 0 0 0 12px; transition: color 0.15s; }
-.modal-close:hover { color: var(--text); }
-.modal-body { padding: 20px 24px; flex: 1; overflow-y: auto; }
-.modal-footer { padding: 14px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0; background: var(--surface); }
-.btn { border-radius: 3px; padding: 8px 18px; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; border: none; }
-.btn-primary { background: var(--artist); color: #fff; }
-.btn-primary:hover { opacity: 0.88; }
-.btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border2); }
-.btn-ghost:hover { color: var(--text); border-color: var(--border2); }
-.import-tabs { display: flex; border-bottom: 1px solid var(--border); margin: -20px -24px 20px; }
-.itab { padding: 12px 18px; font-size: 11px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
-.itab.active { color: var(--artist); border-bottom-color: var(--artist); }
-.itab-panel { display: none; }
-.itab-panel.active { display: block; }
-.form-label { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 7px; display: block; }
-.form-input { width: 100%; background: var(--bg); border: 1px solid var(--border2); border-radius: 3px; padding: 9px 12px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); outline: none; transition: border-color 0.15s; margin-bottom: 4px; }
-.form-input:focus { border-color: var(--artist); }
-.form-input::placeholder { color: var(--faint); }
-.form-textarea { width: 100%; min-height: 160px; background: var(--bg); border: 1px solid var(--border2); border-radius: 3px; padding: 9px 12px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); outline: none; resize: vertical; line-height: 1.6; transition: border-color 0.15s; }
-.form-textarea:focus { border-color: var(--artist); }
-.form-textarea::placeholder { color: var(--faint); }
-.form-hint { font-size: 11px; color: var(--muted); margin-top: 5px; line-height: 1.6; margin-bottom: 14px; }
-.form-select { width: 100%; background: var(--bg); border: 1px solid var(--border2); border-radius: 3px; padding: 8px 10px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); outline: none; cursor: pointer; margin-bottom: 12px; }
-.form-select:focus { border-color: var(--artist); }
-.col-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; margin-bottom: 7px; }
-.col-label { font-size: 11px; color: var(--text); }
-.col-arrow { font-size: 11px; color: var(--muted); text-align: center; }
-.col-select { background: var(--bg); border: 1px solid var(--border2); border-radius: 3px; padding: 5px 8px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text); outline: none; width: 100%; }
-.col-select:focus { border-color: var(--artist); }
-.preview-wrap { overflow-x: auto; margin-top: 10px; }
-.preview-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-.preview-table th { background: var(--surface2); color: var(--muted); padding: 5px 8px; text-align: left; font-size: 9px; letter-spacing: 0.07em; text-transform: uppercase; border-bottom: 1px solid var(--border); }
-.preview-table td { padding: 5px 8px; border-bottom: 1px solid var(--border); color: var(--text); white-space: nowrap; }
-.drop-zone { border: 2px dashed var(--border2); border-radius: 4px; padding: 32px; text-align: center; cursor: pointer; transition: all 0.15s; }
-.drop-zone:hover, .drop-zone.over { border-color: var(--artist); background: rgba(196,136,32,0.04); }
-.dz-icon { font-size: 26px; margin-bottom: 10px; opacity: 0.4; }
-.dz-text { font-size: 12px; color: var(--muted); line-height: 1.7; }
-.info-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 3px; padding: 12px 14px; font-size: 11px; color: var(--muted); line-height: 1.7; margin-bottom: 14px; }
-.info-box.amber { border-left: 3px solid var(--artist); }
-.info-box.teal { border-left: 3px solid var(--regular); }
-.info-box strong { color: var(--text); }
+/* week grid */
+.wgrid-headers { display: grid; grid-template-columns: 64px repeat(7, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 6px 6px 0 0; overflow: hidden; border-bottom: none; }
+.wgrid-body { display: grid; grid-template-columns: 64px repeat(7, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-top: none; border-radius: 0 0 6px 6px; overflow: hidden; }
+.wgh-cell { background: var(--surface2); padding: 9px 10px 8px; }
+.wgh-gutter { background: var(--surface2); }
+.wgh-dayname { font-size: 9px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+.wgh-daynum { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 300; color: var(--text); line-height: 1; }
+.wgh-daynum.today { color: var(--amber); }
+.wgh-cell.has-show { background: var(--surface); }
+.wgh-cell.needs-venue { border-top: 2px solid var(--coral); }
+
+.wgb-cell { background: var(--surface); padding: 8px; min-height: 90px; display: flex; flex-direction: column; gap: 6px; }
+.wgb-empty { background: var(--surface2); }
+.wgb-gutter { background: var(--surface2); padding: 8px; display: flex; flex-direction: column; gap: 6px; justify-content: flex-start; padding-top: 12px; }
+.gutter-area { font-size: 9px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; text-align: right; line-height: 2.4; }
+
+.show-block { border-radius: 4px; padding: 8px 10px; border-left: 3px solid; cursor: pointer; transition: all 0.12s; position: relative; }
+.show-block:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.sb-name { font-size: 11px; font-weight: 600; color: var(--text); line-height: 1.3; margin-bottom: 3px; }
+.sb-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.sb-tag { font-size: 9px; letter-spacing: 0.05em; text-transform: uppercase; padding: 1px 5px; border-radius: 2px; font-weight: 500; }
+.sb-lead { font-size: 10px; color: var(--muted); margin-top: 3px; }
+.status-pip { position: absolute; top: 7px; right: 8px; width: 7px; height: 7px; border-radius: 50%; }
+.pip-confirmed { background: var(--teal); }
+.pip-novenue { background: var(--coral); }
+
+.geo-warn { font-size: 9px; color: var(--coral); background: rgba(200,74,40,0.07); border: 1px solid rgba(200,74,40,0.15); border-radius: 3px; padding: 2px 7px; margin-top: 2px; }
+
+/* week detail panel */
+.wdp-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 10px; padding: 40px 20px; text-align: center; color: var(--muted); }
+.wdp-empty-icon { font-size: 28px; opacity: 0.4; }
+.wdp-top { padding: 18px 18px 14px; border-bottom: 1px solid var(--border); }
+.wdp-eyebrow { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 4px; font-weight: 500; }
+.wdp-name { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 3px; }
+.wdp-loc { font-size: 11px; color: var(--muted); }
+.wdp-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; margin-top: 12px; }
+.wdp-stat { background: var(--surface2); border-radius: 4px; padding: 9px 10px; }
+.wdps-val { font-family: 'Fraunces', serif; font-size: 19px; font-weight: 300; line-height: 1; margin-bottom: 2px; }
+.wdps-lbl { font-size: 9px; color: var(--muted); letter-spacing: 0.07em; text-transform: uppercase; line-height: 1.4; }
+.wdp-section { padding: 14px 18px; border-bottom: 1px solid var(--border); }
+.wdp-sec-title { font-size: 9px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; }
+.hist-row { display: grid; grid-template-columns: 72px 1fr auto; gap: 8px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); }
+.hist-row:last-child { border-bottom: none; }
+.hr-date { font-size: 10px; color: var(--muted); }
+.hr-show { font-size: 11px; color: var(--text); font-weight: 500; }
+.hr-artist { font-size: 9px; color: var(--muted); }
+.hr-fill { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.hr-pct { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 300; }
+.hr-bar { width: 52px; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.hr-fill-bar { height: 100%; border-radius: 2px; }
+.hood-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.hood-card { background: var(--surface2); border-radius: 4px; padding: 9px 11px; }
+.hood-name { font-size: 11px; font-weight: 500; margin-bottom: 5px; }
+.hood-bar-wrap { display: flex; align-items: center; gap: 7px; }
+.hood-bar { flex: 1; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.hood-bar-inner { height: 100%; border-radius: 2px; }
+.hood-pct { font-size: 11px; min-width: 28px; text-align: right; }
+.hood-shows { font-size: 9px; color: var(--muted); margin-top: 3px; }
+.wdp-notes { padding: 14px 18px; }
+.notes-ta { width: 100%; background: var(--bg); border: 1px solid var(--border2); border-radius: 3px; padding: 9px 11px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text); resize: none; outline: none; line-height: 1.6; min-height: 70px; }
+.notes-ta:focus { border-color: var(--amber); }
+.wdp-action-row { display: flex; gap: 7px; margin-top: 8px; }
+.wdp-btn { flex: 1; background: var(--surface2); border: 1px solid var(--border2); color: var(--muted); border-radius: 3px; padding: 7px; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase; cursor: pointer; transition: all 0.15s; }
+.wdp-btn:hover { color: var(--text); }
+.wdp-btn.primary { background: var(--amber); color: #fff; border-color: var(--amber); }
+
+/* ══════════════════════════════════════════
+   CHAT VIEW
+══════════════════════════════════════════ */
+#view-chat { flex-direction: row; }
+
+.chat-sidebar {
+  width: 260px; flex-shrink: 0; background: var(--surface);
+  border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden;
+}
+.cs-head { padding: 18px 18px 14px; border-bottom: 1px solid var(--border); }
+.cs-title { font-family: 'Fraunces', serif; font-size: 16px; font-weight: 300; letter-spacing: -0.01em; margin-bottom: 3px; }
+.cs-title em { font-style: italic; color: var(--amber); }
+.cs-sub { font-size: 10px; color: var(--muted); letter-spacing: 0.06em; }
+.cs-section { padding: 12px 18px; border-bottom: 1px solid var(--border); }
+.cs-label { font-size: 9px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 9px; }
+.cs-stat { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; }
+.cs-stat-name { font-size: 11px; color: var(--text); }
+.cs-stat-val { font-family: 'Fraunces', serif; font-size: 16px; font-weight: 300; color: var(--amber); }
+.cs-body { flex: 1; overflow-y: auto; padding: 12px 18px; }
+.cs-show { padding: 7px 0; border-bottom: 1px solid var(--border); }
+.cs-show:last-child { border-bottom: none; }
+.cs-show-date { font-size: 9px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+.cs-show-name { font-size: 11px; color: var(--text); font-weight: 500; margin-top: 1px; }
+.cs-show-meta { font-size: 10px; color: var(--muted); }
+
+.chat-main { flex: 1; display: flex; flex-direction: column; max-width: 680px; }
+.chat-header-inner { padding: 14px 24px; border-bottom: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.cht-title { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 300; }
+.cht-title em { font-style: italic; color: var(--amber); }
+.model-pill { font-size: 9px; color: var(--muted); background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px; letter-spacing: 0.06em; }
+
+.chat-messages { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+.empty-state { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 32px 24px; }
+.es-icon { font-size: 32px; margin-bottom: 14px; }
+.es-title { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 300; letter-spacing: -0.02em; margin-bottom: 7px; }
+.es-title em { font-style: italic; color: var(--amber); }
+.es-sub { font-size: 11px; color: var(--muted); line-height: 1.8; max-width: 360px; margin-bottom: 22px; }
+.es-chips-label { font-size: 9px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; }
+.es-chips { display: flex; flex-direction: column; gap: 7px; width: 100%; max-width: 420px; }
+.es-chip { background: var(--surface); border: 1px solid var(--border2); border-radius: 20px; padding: 8px 16px; font-size: 11px; color: var(--muted); cursor: pointer; text-align: left; font-family: 'DM Mono', monospace; transition: all 0.15s; }
+.es-chip:hover { border-color: var(--amber); color: var(--amber); background: rgba(196,136,32,0.04); }
+
+.msg { display: flex; gap: 10px; align-items: flex-start; }
+.msg.user { flex-direction: row-reverse; }
+.msg-av { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; flex-shrink: 0; }
+.msg.ai .msg-av { background: var(--amber); color: #fff; }
+.msg.user .msg-av { background: var(--surface3); color: var(--muted); }
+.msg-bub { max-width: 84%; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 11px 15px; font-size: 12px; line-height: 1.75; color: var(--text); }
+.msg.user .msg-bub { background: var(--text); color: var(--bg); border-color: var(--text); }
+.msg-bub strong { font-weight: 600; }
+.msg-bub ul { margin: 6px 0 4px 16px; }
+.msg-bub li { margin-bottom: 4px; }
+.msg-bub p + p { margin-top: 8px; }
+.msg-bub .vc { background: var(--surface2); border: 1px solid var(--border); border-left: 3px solid var(--blue); border-radius: 4px; padding: 9px 12px; margin: 8px 0; }
+.msg-bub .vc-name { font-size: 12px; font-weight: 600; margin-bottom: 3px; }
+.msg-bub .vc-meta { font-size: 10px; color: var(--muted); line-height: 1.8; }
+.typing { display: flex; gap: 4px; padding: 11px 15px; }
+.typing span { width: 6px; height: 6px; border-radius: 50%; background: var(--border2); animation: tdot 1.2s infinite; }
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes tdot { 0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)} }
+
+.chat-input-bar { padding: 14px 24px; border-top: 1px solid var(--border); background: var(--surface); display: flex; gap: 10px; align-items: flex-end; flex-shrink: 0; }
+#chat-input { flex: 1; background: var(--bg); border: 1px solid var(--border2); border-radius: 8px; padding: 10px 14px; font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); outline: none; resize: none; line-height: 1.6; max-height: 120px; overflow-y: auto; transition: border-color 0.15s; }
+#chat-input:focus { border-color: var(--amber); }
+#chat-input::placeholder { color: var(--faint); }
+.send-btn { width: 40px; height: 40px; background: var(--amber); border: none; border-radius: 8px; color: #fff; font-size: 16px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: opacity 0.15s; }
+.send-btn:hover { opacity: 0.88; }
+.send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ── TOAST ── */
 #toast { position: fixed; bottom: 20px; right: 20px; background: var(--text); border-radius: 4px; padding: 9px 14px; font-size: 12px; color: #fff; transform: translateY(50px); opacity: 0; transition: all 0.25s; z-index: 600; pointer-events: none; }
 #toast.show { transform: translateY(0); opacity: 1; }
-#toast.error { background: var(--partnership); }
+#toast.err { background: var(--coral); }
 </style>
 </head>
 <body>
 
-<div id="loading-screen">
-  <div class="loading-logo">Sofar <em>LA</em></div>
-  <div class="loading-bar"><div class="loading-fill" id="loading-fill"></div></div>
-  <div class="loading-status" id="loading-status">Connecting to database...</div>
+<!-- HEADER -->
+<div id="header">
+  <div class="logo">Sofar <em>LA</em></div>
+  <div class="hdiv"></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchView('map')" id="tab-map"><span class="tab-icon">🗺</span> Map</button>
+    <button class="nav-tab" onclick="switchView('week')" id="tab-week"><span class="tab-icon">📅</span> Week</button>
+    <button class="nav-tab" onclick="switchView('chat')" id="tab-chat"><span class="tab-icon">✦</span> Ask</button>
+  </div>
+  <div class="hdiv"></div>
+  <div class="month-nav">
+    <button class="mnbtn" onclick="changeMonth(-1)">‹</button>
+    <span id="month-label">March 2026</span>
+    <button class="mnbtn" onclick="changeMonth(1)">›</button>
+  </div>
+  <div class="hright">
+    <button class="hbtn" onclick="refreshData()">↺ Sync</button>
+    <button class="hbtn amber" onclick="openImportSimple()">⇡ Import</button>
+    <div id="sync-dot"></div>
+  </div>
 </div>
 
 <div id="app">
-  <div id="header">
-    <div class="logo">Sofar <em>LA</em></div>
-    <div class="hdiv"></div>
-    <div class="month-nav">
-      <button class="mnbtn" onclick="changeMonth(-1)">‹</button>
-      <span id="month-label">March 2026</span>
-      <button class="mnbtn" onclick="changeMonth(1)">›</button>
-    </div>
-    <div class="hdiv"></div>
-    <div class="view-toggle">
-      <button class="vbtn active" id="btn-map" onclick="setView('map')">MAP</button>
-      <button class="vbtn" id="btn-list" onclick="setView('list')">LIST</button>
-    </div>
-    <div class="hright">
-      <button class="hbtn amber" onclick="openImport()">⇡ IMPORT</button>
-      <button class="hbtn teal" onclick="exportCSV()">↓ CSV</button>
-      <button class="hbtn" onclick="exportNotes()">↓ NOTES</button>
-      <button class="hbtn" onclick="refreshData()">↺ SYNC</button>
-      <div id="sync-indicator">
-        <div class="sdot" id="sdot"></div>
-        <span id="sync-label">Live</span>
-      </div>
-    </div>
-  </div>
 
-  <div id="layout">
+  <!-- ══ MAP VIEW ══ -->
+  <div class="view active" id="view-map">
     <aside id="sidebar">
-      <div class="sb-sec">
-        <div class="sb-title">Layers</div>
-        <div id="layer-toggles"></div>
+      <div class="sb-header">
+        <span class="sb-count" id="sb-count">Loading...</span>
+        <button class="filter-btn" onclick="toggleFilters()">⚙ Filters</button>
       </div>
-      <div class="sb-sec">
-        <div class="sb-title">Capacity Filter</div>
-        <div class="cap-row"><span style="font-size:12px;color:var(--text)">Min</span><span class="cap-val" id="capminv">0</span></div>
+      <div id="item-list"><div class="list-empty">Loading data...</div></div>
+    </aside>
+    <div id="filter-drawer">
+      <div class="fd-head"><div class="fd-title">Filters</div><button class="fd-close" onclick="toggleFilters()">×</button></div>
+      <div class="fd-body">
+        <div class="fd-sec-label" style="margin-bottom:10px">Layers</div>
+        <div id="layer-toggles"></div>
+        <div class="fd-sec-label" style="margin-top:18px;margin-bottom:10px">Capacity</div>
+        <div class="cap-row"><span>Min</span><span id="capminv">0</span></div>
         <input type="range" id="capmin" min="0" max="300" value="0" oninput="updateCap()">
-        <div class="cap-row" style="margin-top:9px"><span style="font-size:12px;color:var(--text)">Max</span><span class="cap-val" id="capmaxv">300+</span></div>
+        <div class="cap-row" style="margin-top:10px"><span>Max</span><span id="capmaxv">300+</span></div>
         <input type="range" id="capmax" min="0" max="300" value="300" oninput="updateCap()">
       </div>
-      <div id="item-list"></div>
-    </aside>
-
-    <div id="map-wrap">
-      <div id="map"></div>
-      <div id="list-view">
-        <div class="view-mode-toggle">
-          <button class="vm-btn active" id="vm-cal" onclick="setListMode('calendar')">CALENDAR</button>
-          <button class="vm-btn" id="vm-grid" onclick="setListMode('grid')">GRID</button>
-        </div>
-        <div id="lv-calendar" class="cal-view"></div>
-        <div class="lv-grid" id="lv-grid" style="display:none"></div>
-      </div>
     </div>
-
+    <div id="map-wrap"><div id="map"></div></div>
     <aside id="detail-panel">
       <div class="dp-inner">
         <div class="dp-head">
           <button class="dp-close" onclick="closeDetail()">×</button>
-          <div class="dp-type" id="d-type"></div>
-          <div class="dp-name" id="d-name"></div>
-          <div class="dp-hood" id="d-hood"></div>
+          <div class="dp-type" id="dp-type"></div>
+          <div class="dp-name" id="dp-name"></div>
+          <div class="dp-hood" id="dp-hood"></div>
         </div>
         <div class="dp-body">
-          <div class="dp-field"><div class="dp-fl">Date / Day</div><div class="dp-fv" id="d-date"></div></div>
-          <div class="dp-field"><div class="dp-fl">Area</div><div class="dp-fv" id="d-area"></div></div>
-          <div class="dp-field"><div class="dp-fl">Capacity</div><div class="dp-fv" id="d-cap"></div></div>
-          <div class="dp-field"><div class="dp-fl">Type / Format</div><div class="dp-fv" id="d-format"></div></div>
-          <div class="dp-field"><div class="dp-fl">Status</div><div class="dp-fv" id="d-status"></div></div>
-          <div class="dp-field" id="d-artist-wrap"><div class="dp-fl">Artist / Host</div><div class="dp-fv" id="d-artist"></div></div>
-          <div class="dp-field" id="d-lead-wrap"><div class="dp-fl">Show Lead</div><div class="dp-fv" id="d-lead"></div></div>
-          <div class="dp-field" id="d-coords-wrap">
-            <div class="dp-fl">Map Coordinates</div>
-            <div class="dp-fv" id="d-coords" style="font-size:11px;color:var(--muted)"></div>
-            <div class="coord-hint" id="d-coord-hint" style="display:none">
-              📍 <strong>Backyard or private venue?</strong><br>
-              Go to Google Maps → find the spot → right-click → <strong>"What's here?"</strong> → copy the lat, lng coordinates → add <code>lat</code> and <code>lng</code> columns to your Sheets row.
+          <div class="dp-row"><div class="dp-label">Date</div><div class="dp-val" id="dp-date"></div></div>
+          <div class="dp-row"><div class="dp-label">Area</div><div class="dp-val" id="dp-area"></div></div>
+          <div class="dp-row"><div class="dp-label">Capacity</div><div class="dp-val" id="dp-cap"></div></div>
+          <div class="dp-row"><div class="dp-label">Type</div><div class="dp-val" id="dp-format"></div></div>
+          <div class="dp-row"><div class="dp-label">Status</div><div class="dp-val" id="dp-status"></div></div>
+          <div class="dp-row" id="dp-lead-row"><div class="dp-label">Show Lead</div><div class="dp-val" id="dp-lead"></div></div>
+          <div class="dp-div"></div>
+          <div id="dp-at-notes-block" style="display:none">
+            <div class="dp-at-notes">
+              <div class="dp-at-notes-label">⬡ Sofar system notes</div>
+              <div class="dp-at-notes-text" id="dp-at-notes-text"></div>
             </div>
           </div>
-          <div class="dp-divider"></div>
           <div>
-            <div class="dp-fl" style="margin-bottom:7px">Notes</div>
-            <textarea class="dp-notes" id="d-notes" placeholder="Venue contact, logistics, load-in, parking, ideas..."></textarea>
-            <button class="dp-save" id="save-btn" onclick="saveNote()">SAVE TO DATABASE</button>
-            <div class="dp-live-badge">✓ Notes sync to Supabase — visible to everyone</div>
+            <div class="dp-notes-label-row">
+              <div class="dp-label">Your Notes</div>
+              <button class="dp-notes-browse" onclick="openBrowse()">Browse all venues ›</button>
+            </div>
+            <div class="dp-notes-prompts">Logistics · Host contact · Load-in · Audience fit · Book again?</div>
+            <textarea class="dp-notes" id="dp-notes" placeholder="e.g. Crew needs 30 min early for furniture. Host is slow to respond. Great parking on 5th..."></textarea>
+            <div class="dp-notes-char"><span id="dp-notes-char">0</span> chars</div>
+            <button class="dp-save" id="dp-save" onclick="saveNote()">Save to Database</button>
           </div>
         </div>
       </div>
     </aside>
   </div>
-</div>
 
-<!-- IMPORT MODAL -->
-<div class="modal-overlay" id="import-modal">
-  <div class="modal">
-    <div class="modal-head">
-      <div>
-        <div class="modal-title">Import Data</div>
-        <div class="modal-sub">Paste from Google Sheets or upload a CSV — saves directly to Supabase</div>
+  <!-- ══ WEEK VIEW ══ -->
+  <div class="view" id="view-week">
+    <div class="week-toolbar">
+      <div class="week-nav">
+        <button class="wnbtn" onclick="changeWeek(-1)">‹</button>
+        <span class="week-range" id="week-range">Mar 16 – Mar 22, 2026</span>
+        <button class="wnbtn" onclick="changeWeek(1)">›</button>
       </div>
-      <button class="modal-close" onclick="closeModal('import-modal')">×</button>
+      <div class="hdiv"></div>
+      <div class="week-stat"><div class="wstat-pip" style="background:var(--teal)"></div><span class="wstat-num" id="wstat-confirmed">0</span>&nbsp;confirmed</div>
+      <div class="week-stat"><div class="wstat-pip" style="background:var(--coral)"></div><span class="wstat-num" id="wstat-novenue">0</span>&nbsp;need venue</div>
     </div>
-    <div class="modal-body">
-      <div class="import-tabs">
-        <div class="itab active" onclick="switchTab('paste')">PASTE FROM SHEETS</div>
-        <div class="itab" onclick="switchTab('upload')">UPLOAD CSV</div>
-        <div class="itab" onclick="switchTab('sync')">LIVE SYNC</div>
+    <div class="week-body">
+      <div class="week-main">
+        <div id="week-alerts"></div>
+        <div id="week-grid-headers" class="wgrid-headers"></div>
+        <div id="week-grid-body" class="wgrid-body"></div>
       </div>
-      <div class="itab-panel active" id="tab-paste">
-        <div class="info-box amber">
-          <strong>From Google Sheets:</strong> Select rows (including header row), Cmd/Ctrl+C, paste below.
-        </div>
-        <div class="form-label">Which table?</div>
-        <select class="form-select" id="paste-table">
-          <option value="2026_calendar">2026 Calendar / Schedule</option>
-          <option value="venue_list">Venue List</option>
-          <option value="artist_hosted">Artist-Hosted Tracker</option>
-        </select>
-        <label class="form-label">Paste data</label>
-        <textarea class="form-textarea" id="paste-input" placeholder="Date&#9;Day of Week&#9;Venue&#9;Neighborhood&#9;Type&#9;Area&#9;Show Lead&#10;3/5/2026&#9;Thursday&#9;The Andaz&#9;West Hollywood&#9;Artist Hosted&#9;Hollywood + WeHo&#9;Ben" oninput="parsePaste()"></textarea>
-        <div class="form-hint">Tab-separated. First row must be headers. Include <strong>lat</strong> and <strong>lng</strong> columns for backyard / private venues.</div>
-        <div id="paste-preview" style="display:none">
-          <div class="form-label" style="margin-top:8px">Column Mapping</div>
-          <div id="col-mapper"></div>
-          <div class="form-label" style="margin-top:12px">Preview (first 3 rows)</div>
-          <div class="preview-wrap"><table class="preview-table" id="preview-table"></table></div>
+      <div class="week-detail" id="week-detail">
+        <div class="wdp-empty">
+          <div class="wdp-empty-icon">👆</div>
+          <div style="font-size:12px;color:var(--muted)">Click a show to see<br>venue details & history</div>
         </div>
       </div>
-      <div class="itab-panel" id="tab-upload">
-        <div class="form-label">Which table?</div>
-        <select class="form-select" id="upload-table">
-          <option value="2026_calendar">2026 Calendar / Schedule</option>
-          <option value="venue_list">Venue List</option>
-          <option value="artist_hosted">Artist-Hosted Tracker</option>
-        </select>
-        <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()" ondrop="handleDrop(event)" ondragover="e=>e.preventDefault()">
-          <div class="dz-icon">📄</div>
-          <div class="dz-text" id="dz-text">Drop CSV here or click to browse<br><span style="color:var(--faint)">Sheets → File → Download → CSV</span></div>
-        </div>
-        <input type="file" id="file-input" accept=".csv,.tsv" style="display:none" onchange="handleFile(event)">
-        <div id="upload-preview" style="display:none; margin-top:14px">
-          <div class="form-label">Column Mapping</div>
-          <div id="upload-col-mapper"></div>
-          <div class="preview-wrap"><table class="preview-table" id="upload-preview-table"></table></div>
-        </div>
-      </div>
-      <div class="itab-panel" id="tab-sync">
-        <div class="info-box teal">
-          <strong>How to get your sync URLs:</strong><br>
-          1. Google Sheets → File → Share → Publish to web<br>
-          2. Select each tab → choose <strong>CSV</strong> format → click Publish → copy URL<br>
-          3. Paste each URL below. Saved once — map auto-fetches on every load.
-        </div>
-        <div style="margin-bottom:14px">
-          <label class="form-label">2026 Calendar / Schedule URL</label>
-          <input type="text" class="form-input" id="sync-cal-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv&gid=...">
-          <div class="form-hint">Maps to your 2026_calendar table in Supabase.</div>
-        </div>
-        <div style="margin-bottom:14px">
-          <label class="form-label">Venue List URL</label>
-          <input type="text" class="form-input" id="sync-venue-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv&gid=...">
-          <div class="form-hint">Maps to your venue_list table in Supabase.</div>
-        </div>
-        <div style="margin-bottom:14px">
-          <label class="form-label">Artist-Hosted Tracker URL</label>
-          <input type="text" class="form-input" id="sync-artist-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv&gid=...">
-          <div class="form-hint">Maps to your artist_hosted table in Supabase.</div>
-        </div>
-        <button class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="saveSyncUrls()">SAVE & TEST CONNECTIONS</button>
-        <div id="sync-results" style="display:none"></div>
-        <div class="info-box" style="margin-top:12px;font-size:10px">
-          <strong>Auto-sync:</strong> Every time the map loads, it fetches fresh CSV data from these URLs,
-          upserts into Supabase, then renders. Update Sheets → open map → data is current. No manual import needed.
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('import-modal')">CANCEL</button>
-      <button class="btn btn-primary" id="import-confirm-btn" onclick="confirmImport()">IMPORT TO DATABASE</button>
     </div>
   </div>
+
+  <!-- ══ CHAT VIEW ══ -->
+  <div class="view" id="view-chat">
+    <div class="chat-sidebar">
+      <div class="cs-head">
+        <div class="cs-title">Ask <em>anything</em></div>
+        <div class="cs-sub">Your live data as context</div>
+      </div>
+      <div class="cs-section">
+        <div class="cs-label">Loaded</div>
+        <div class="cs-stat"><span class="cs-stat-name">Shows this month</span><span class="cs-stat-val" id="cs-show-count">–</span></div>
+        <div class="cs-stat"><span class="cs-stat-name">Pipeline venues</span><span class="cs-stat-val" id="cs-venue-count">–</span></div>
+      </div>
+      <div class="cs-body" id="cs-body">
+        <div class="cs-label" style="padding-top:4px">This month</div>
+      </div>
+    </div>
+    <div class="chat-main">
+      <div class="chat-header-inner">
+        <div class="cht-title">What do you need to <em>know?</em></div>
+        <div class="model-pill">Claude Haiku · live data</div>
+      </div>
+      <div class="chat-messages" id="chat-messages">
+        <div class="empty-state" id="chat-empty">
+          <div class="es-icon">🎵</div>
+          <div class="es-title">Ask about your <em>shows</em></div>
+          <div class="es-sub">Questions about schedule, leads, venues, conflicts — answered instantly from your live data.</div>
+          <div class="es-chips-label">Try asking</div>
+          <div class="es-chips">
+            <div class="es-chip" onclick="sendChip(this)">Who's the show lead for each Friday this month?</div>
+            <div class="es-chip" onclick="sendChip(this)">We need a venue for an artist with ~50 people, Eastside crowd</div>
+            <div class="es-chip" onclick="sendChip(this)">Which nights have back-to-back shows in the same area?</div>
+            <div class="es-chip" onclick="sendChip(this)">How many shows is Ben leading in March?</div>
+            <div class="es-chip" onclick="sendChip(this)">Which neighborhoods have no shows scheduled yet?</div>
+          </div>
+        </div>
+      </div>
+      <div class="chat-input-bar">
+        <textarea id="chat-input" rows="1" placeholder="Ask about your shows, venues, leads, schedule..." onkeydown="handleChatKey(event)" oninput="autoResizeChat(this)"></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendChat()">↑</button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <div id="toast"></div>
 
 <script>
-// ═══════════════════════════════════════════════════
-// SUPABASE
-// ═══════════════════════════════════════════════════
+// ══════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════
 const SUPABASE_URL = 'https://hbancnwohadueykjqmdv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_6GdVvmpgtyaCuU7_k_D2QQ_a9ZPqp6L';
+const MAPS_KEY = 'AIzaSyA6OtNfq7KUOG98lO6YEWe1EpLVdqgC_oo';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── AIRTABLE ──
+const AT_TOKEN = 'pat6qOjB8qddJgZRN.840f4f36c8d62a01dd9e563eb589fbc9d0d3c69259a16290610702955f60a337';
+const AT_BASE  = 'appFjmrBPpOKVSdpz';
+const AT_HEADERS = { 'Authorization': `Bearer ${AT_TOKEN}` };
 
 const LAYERS = [
   { id:'artist',      name:'Artist-Hosted',  color:'#C48820' },
@@ -429,17 +523,13 @@ const LAYERS = [
   { id:'outdoor',     name:'Summer/Outdoor', color:'#5A9840' },
   { id:'hosted',      name:'Artist Tracker', color:'#9A4AC8' },
 ];
-
 const TYPE_MAP = {
-  'artist hosted':'artist','artist-hosted':'artist','artist_hosted':'artist',
-  'discovery':'regular','regular':'regular','regular show':'regular',
-  'private / partnership':'partnership','partnership':'partnership',
-  'private/partnership':'partnership','private':'partnership',
-  'pipeline':'pipeline','pipeline venue':'pipeline',
-  'outdoor':'outdoor','summer/outdoor':'outdoor','summer outdoor':'outdoor',
-  'artist tracker':'hosted','artist-hosted show':'artist',
+  'artist hosted':'artist','artist-hosted':'artist','discovery':'regular','regular':'regular',
+  'regular show':'regular','private / partnership':'partnership','partnership':'partnership',
+  'private/partnership':'partnership','private':'partnership','pipeline':'pipeline',
+  'pipeline venue':'pipeline','outdoor':'outdoor','summer/outdoor':'outdoor',
+  'artist tracker':'hosted','special':'regular',
 };
-
 function resolveType(raw) {
   if (!raw) return 'pipeline';
   const n = raw.toLowerCase().trim();
@@ -447,228 +537,145 @@ function resolveType(raw) {
   if (n.includes('artist')) return 'artist';
   if (n.includes('partner')||n.includes('private')) return 'partnership';
   if (n.includes('outdoor')||n.includes('summer')) return 'outdoor';
-  if (n.includes('discovery')||n.includes('regular')) return 'regular';
-  return 'pipeline';
+  return 'regular';
 }
 
-// ═══════════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════════
-let DATA = [];
-let currentMonth = '2026-03';
-let currentView = 'map';
-let selectedId = null;
-let map = null;
-let markers = {};
-let layerVisible = {};
-let capMin = 0, capMax = 300;
-let parsedRows = [], parsedHeaders = [], colMap = {}, importActive = 'paste';
+// ── STATE ──
+let DATA = [], map = null, markers = {}, selectedId = null;
+let layerVisible = {}, capMin = 0, capMax = 300;
+let currentMonth = '2026-03', filterOpen = false;
+let weekOffset = 0;
+let chatMessages = [], chatLoading = false;
 LAYERS.forEach(l => layerVisible[l.id] = true);
 
-// ═══════════════════════════════════════════════════
-// BOOT
-// ═══════════════════════════════════════════════════
-async function boot() {
-  setLoading('Connecting to database...', 10);
-  try {
-    await autoSyncOnLoad();
-    await loadAllData();
-    setLoading('Ready', 100);
-    setTimeout(() => {
-      document.getElementById('loading-screen').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-      loadMapsAPI('AIzaSyA6OtNfq7KUOG98lO6YEWe1EpLVdqgC_oo');
-    }, 400);
-  } catch(e) {
-    console.error(e);
-    setLoading('Connection error', 100);
-    document.getElementById('loading-status').style.color = '#C84A28';
-    setTimeout(() => {
-      document.getElementById('loading-screen').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-      loadMapsAPI('AIzaSyA6OtNfq7KUOG98lO6YEWe1EpLVdqgC_oo');
-    }, 1500);
-  }
+// Airtable cache
+let AT_EVENTS = [];   // all LA events from Airtable
+let AT_VENUES = {};   // keyed by venue name → aggregated stats
+let AT_HOODS  = {};   // keyed by neighborhood → aggregated stats
+let atLoaded = false;
+
+// ══════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════
+function switchView(v) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-' + v).classList.add('active');
+  document.getElementById('tab-' + v).classList.add('active');
+  if (v === 'map' && map) google.maps.event.trigger(map, 'resize');
+  if (v === 'week') renderWeek();
+  if (v === 'chat') updateChatSidebar();
 }
 
-function setLoading(msg, pct) {
-  document.getElementById('loading-status').textContent = msg;
-  document.getElementById('loading-fill').style.width = pct + '%';
-}
-
-// ═══════════════════════════════════════════════════
-// DATA FROM SUPABASE
-// ═══════════════════════════════════════════════════
-async function loadAllData() {
-  setSyncState('syncing', 'Syncing...');
-  const [schedRes, venRes, artRes] = await Promise.all([
+// ══════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════
+async function loadData() {
+  setSyncState('syncing');
+  const [sched, venues, artists] = await Promise.all([
     sb.from('2026_calendar').select('*'),
     sb.from('venue_list').select('*'),
     sb.from('artist_hosted').select('*'),
   ]);
   DATA = [];
-
-  if (schedRes.data) {
-    schedRes.data.forEach((row, i) => {
-      const month = parseMonthFromDate(row.date);
-      const hasCoords = row.lat && row.lng;
-      DATA.push({
-        id: 'sch-' + row.id, db_id: row.id, table: '2026_calendar',
-        month, type: resolveType(row.type),
-        name: row.venue || row.venue_name || '–',
-        neighborhood: row.neighborhood || '–',
-        area: row.area || '–',
-        lat: parseFloat(row.lat) || geoEstimate(row.area, i).lat,
-        lng: parseFloat(row.lng) || geoEstimate(row.area, i).lng,
-        hasExactCoords: !!hasCoords,
-        rawLat: row.lat, rawLng: row.lng,
-        date: formatDate(row.date), day: row.day_of_week || row.day || '',
-        cap: parseInt(row.capacity) || 0,
-        format: row.type || '–', status: row.status || 'Scheduled',
-        artist: row.artist || '', lead: row.show_lead || '', notes: row.notes || '',
-      });
-    });
-  }
-
-  if (venRes.data) {
-    venRes.data.forEach((row, i) => {
-      const hasCoords = row.lat && row.lng;
-      DATA.push({
-        id: 'ven-' + row.id, db_id: row.id, table: 'venue_list',
-        month: 'all', type: 'pipeline',
-        name: row.venue_name || '–',
-        neighborhood: row.neighborhood || '–',
-        area: row.area || '–',
-        lat: parseFloat(row.lat) || geoEstimate(row.area, i + 50).lat,
-        lng: parseFloat(row.lng) || geoEstimate(row.area, i + 50).lng,
-        hasExactCoords: !!hasCoords,
-        rawLat: row.lat, rawLng: row.lng,
-        date: '–', day: '',
-        cap: parseInt(row.capacity) || 0,
-        format: row.byod_bar ? `Venue · ${row.byod_bar}` : 'Pipeline Venue',
-        status: row.status || 'Active',
-        artist: '', lead: '', notes: row.notes || '',
-      });
-    });
-  }
-
-  if (artRes.data) {
-    artRes.data.forEach((row, i) => {
-      const month = parseMonthFromDate(row.date);
-      const hasCoords = row.lat && row.lng;
-      DATA.push({
-        id: 'art-' + row.id, db_id: row.id, table: 'artist_hosted',
-        month, type: 'hosted',
-        name: row.headliner || '–',
-        neighborhood: row.neighborhood || '–',
-        area: row.area || '–',
-        lat: parseFloat(row.lat) || geoEstimate(row.area, i + 100).lat,
-        lng: parseFloat(row.lng) || geoEstimate(row.area, i + 100).lng,
-        hasExactCoords: !!hasCoords,
-        rawLat: row.lat, rawLng: row.lng,
-        date: formatDate(row.date), day: row.day || '',
-        cap: parseInt(row.capacity) || 0,
-        format: 'Artist-Hosted',
-        status: row.venue_status || '–',
-        artist: row.headliner || '', lead: '', notes: row.notes || '',
-      });
-    });
-  }
-
-  setSyncState('ok', 'Live');
-}
-
-function geoEstimate(area, seed) {
-  const areas = {
-    'eastside':           { lat: 34.075, lng: -118.215 },
-    'central la':         { lat: 34.055, lng: -118.295 },
-    'westside':           { lat: 34.020, lng: -118.440 },
-    'downtown':           { lat: 34.045, lng: -118.255 },
-    'arts district':      { lat: 34.040, lng: -118.230 },
-    'hollywood + weho':   { lat: 34.090, lng: -118.360 },
-    'west hollywood':     { lat: 34.090, lng: -118.360 },
-    'silver lake':        { lat: 34.088, lng: -118.270 },
-    'echo park':          { lat: 34.077, lng: -118.258 },
-    'culver city':        { lat: 34.022, lng: -118.397 },
-    'koreatown':          { lat: 34.058, lng: -118.300 },
-    'atwater village':    { lat: 34.115, lng: -118.257 },
-    'eagle rock':         { lat: 34.139, lng: -118.216 },
-    'frogtown':           { lat: 34.095, lng: -118.243 },
-    'outer la':           { lat: 34.020, lng: -118.480 },
-    'orange county':      { lat: 33.750, lng: -117.870 },
-  };
-  const key = (area || '').toLowerCase();
-  const base = areas[key] || { lat: 34.052, lng: -118.280 };
-  const jitter = ((seed * 137.508) % 1) * 0.014 - 0.007;
-  return { lat: base.lat + jitter, lng: base.lng + jitter * 1.5 };
-}
-
-function parseMonthFromDate(d) {
-  if (!d) return currentMonth;
-  const date = new Date(d);
-  if (isNaN(date)) return currentMonth;
-  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}`;
-}
-
-function formatDate(d) {
-  if (!d) return '–';
-  const date = new Date(d);
-  if (isNaN(date)) return d;
-  return date.toLocaleDateString('en-US', {weekday:'short',month:'short',day:'numeric',year:'numeric'});
-}
-
-// ═══════════════════════════════════════════════════
-// MAPS
-// ═══════════════════════════════════════════════════
-function loadMapsAPI(key) {
-  const s = document.createElement('script');
-  s.src = `https://maps.googleapis.com/maps/api/js?key=${key}&callback=initMap`;
-  s.async = true;
-  s.onerror = () => { showToast('Maps API failed — switching to list view', true); setView('list'); };
-  document.head.appendChild(s);
-}
-
-window.initMap = function() {
-  const warmLight = [
-    { elementType: 'geometry', stylers: [{ color: '#f5f0e8' }] },
-    { elementType: 'labels.text.stroke', stylers: [{ color: '#f5f0e8' }] },
-    { elementType: 'labels.text.fill', stylers: [{ color: '#8a7a6a' }] },
-    { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#5a4a3a' }] },
-    { featureType: 'poi', stylers: [{ visibility: 'off' }] },
-    { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#e4edd8' }] },
-    { featureType: 'poi.park', stylers: [{ visibility: 'simplified' }] },
-    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
-    { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#a09080' }] },
-    { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#efe8dc' }] },
-    { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#e0d8c8' }] },
-    { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#d0c8b8' }] },
-    { featureType: 'transit', stylers: [{ visibility: 'off' }] },
-    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#c8dde8' }] },
-    { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#7a9aaa' }] },
-  ];
-  map = new google.maps.Map(document.getElementById('map'), {
-    center: { lat: 34.0522, lng: -118.2800 },
-    zoom: 11,
-    styles: warmLight,
-    disableDefaultUI: true,
-    zoomControl: true,
-    zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_BOTTOM }
-  });
+  if (sched.data) sched.data.forEach((r,i) => DATA.push({
+    id:'sch-'+r.id, db_id:r.id, table:'2026_calendar',
+    month: parseMonth(r.date), type: resolveType(r.type),
+    name: r.venue||r.venue_name||'–', neighborhood: r.neighborhood||'–', area: r.area||'–',
+    lat: parseFloat(r.lat)||geo(r.area,i).lat, lng: parseFloat(r.lng)||geo(r.area,i).lng,
+    date: fmtDate(r.date), rawDate: r.date, day: r.day_of_week||'',
+    cap: parseInt(r.capacity)||0, format: r.type||'–',
+    status: r.status||'Scheduled', lead: r.show_lead||'', notes: r.notes||'',
+  }));
+  if (venues.data) venues.data.forEach((r,i) => DATA.push({
+    id:'ven-'+r.id, db_id:r.id, table:'venue_list',
+    month:'all', type:'pipeline',
+    name: r.venue_name||'–', neighborhood: r.neighborhood||'–', area: r.area||'–',
+    lat: parseFloat(r.lat)||geo(r.area,i+50).lat, lng: parseFloat(r.lng)||geo(r.area,i+50).lng,
+    date:'–', rawDate:null, day:'',
+    cap: parseInt(r.capacity)||0, format: r.byod_bar?`Venue · ${r.byod_bar}`:'Pipeline',
+    status: r.status||'Active', lead:'', notes: r.notes||'',
+  }));
+  if (artists.data) artists.data.forEach((r,i) => DATA.push({
+    id:'art-'+r.id, db_id:r.id, table:'artist_hosted',
+    month: parseMonth(r.date), type:'hosted',
+    name: r.headliner||'–', neighborhood: r.neighborhood||'–', area: r.area||'–',
+    lat: parseFloat(r.lat)||geo(r.area,i+100).lat, lng: parseFloat(r.lng)||geo(r.area,i+100).lng,
+    date: fmtDate(r.date), rawDate: r.date, day: r.day||'',
+    cap: parseInt(r.capacity)||0, format:'Artist-Hosted',
+    status: r.venue_status||'–', lead:'', notes: r.notes||'',
+  }));
+  setSyncState('ok');
   renderAll();
-};
+  updateChatSidebar();
+}
 
-// ═══════════════════════════════════════════════════
-// RENDER
-// ═══════════════════════════════════════════════════
+function parseMonth(d) {
+  if (!d) return currentMonth;
+  const dt = new Date(d); if (isNaN(dt)) return currentMonth;
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
+}
+function fmtDate(d) {
+  if (!d) return '–';
+  const dt = new Date(d); if (isNaN(dt)) return d;
+  return dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+}
+function geo(area, seed) {
+  const a = {
+    'eastside':{lat:34.075,lng:-118.215},'central la':{lat:34.055,lng:-118.295},
+    'westside':{lat:34.020,lng:-118.440},'downtown':{lat:34.045,lng:-118.255},
+    'arts district':{lat:34.040,lng:-118.230},'hollywood + weho':{lat:34.090,lng:-118.360},
+    'west hollywood':{lat:34.090,lng:-118.360},'silver lake':{lat:34.088,lng:-118.270},
+    'echo park':{lat:34.077,lng:-118.258},'culver city':{lat:34.022,lng:-118.397},
+    'koreatown':{lat:34.058,lng:-118.300},'atwater village':{lat:34.115,lng:-118.257},
+    'eagle rock':{lat:34.139,lng:-118.216},'frogtown':{lat:34.095,lng:-118.243},
+    'outer la':{lat:34.020,lng:-118.480},'orange county':{lat:33.750,lng:-117.870},
+  };
+  const base = a[(area||'').toLowerCase()] || {lat:34.052,lng:-118.280};
+  const j = ((seed*137.508)%1)*0.014-0.007;
+  return {lat:base.lat+j, lng:base.lng+j*1.5};
+}
 function getColor(type) { return (LAYERS.find(l=>l.id===type)||{}).color||'#888'; }
 function getLabel(type) { return (LAYERS.find(l=>l.id===type)||{}).name||type; }
 
+// ══════════════════════════════════════════
+// MAP
+// ══════════════════════════════════════════
+function loadMap() {
+  const s = document.createElement('script');
+  s.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_KEY}&callback=initMap`;
+  s.async = true; document.head.appendChild(s);
+}
+window.initMap = function() {
+  map = new google.maps.Map(document.getElementById('map'), {
+    center:{lat:34.052,lng:-118.280}, zoom:11,
+    styles:[
+      {elementType:'geometry',stylers:[{color:'#f5f0e8'}]},
+      {elementType:'labels.text.stroke',stylers:[{color:'#f5f0e8'}]},
+      {elementType:'labels.text.fill',stylers:[{color:'#8a7a6a'}]},
+      {featureType:'administrative.locality',elementType:'labels.text.fill',stylers:[{color:'#5a4a3a'}]},
+      {featureType:'poi',stylers:[{visibility:'off'}]},
+      {featureType:'poi.park',elementType:'geometry',stylers:[{color:'#e4edd8'}]},
+      {featureType:'poi.park',stylers:[{visibility:'simplified'}]},
+      {featureType:'road',elementType:'geometry',stylers:[{color:'#ffffff'}]},
+      {featureType:'road',elementType:'labels.text.fill',stylers:[{color:'#a09080'}]},
+      {featureType:'road.arterial',elementType:'geometry',stylers:[{color:'#efe8dc'}]},
+      {featureType:'road.highway',elementType:'geometry',stylers:[{color:'#e0d8c8'}]},
+      {featureType:'transit',stylers:[{visibility:'off'}]},
+      {featureType:'water',elementType:'geometry',stylers:[{color:'#c8dde8'}]},
+    ],
+    disableDefaultUI:true, zoomControl:true,
+    zoomControlOptions:{position:google.maps.ControlPosition.RIGHT_BOTTOM}
+  });
+  loadData();
+};
+
 function getFiltered() {
-  return DATA.filter(item => {
-    const monthOk = item.month==='all' || item.month===currentMonth;
-    const layerOk = layerVisible[item.type] !== false;
-    const capOk = (capMin===0 && capMax>=300) || !item.cap || (item.cap>=capMin && item.cap<=capMax);
-    return monthOk && layerOk && capOk;
+  return DATA.filter(d => {
+    const mOk = d.month==='all'||d.month===currentMonth;
+    const lOk = layerVisible[d.type]!==false;
+    const cOk = (capMin===0&&capMax>=300)||!d.cap||(d.cap>=capMin&&d.cap<=capMax);
+    return mOk&&lOk&&cOk;
   });
 }
 
@@ -678,11 +685,10 @@ function renderAll() {
   if (map) data.forEach(createMarker);
   renderLayerToggles();
   renderSidebar(data);
-  renderListView(data);
 }
 
 function clearMarkers() {
-  Object.values(markers).forEach(m => m.setMap && m.setMap(null));
+  Object.values(markers).forEach(m => m.setMap&&m.setMap(null));
   markers = {};
 }
 
@@ -690,682 +696,869 @@ function createMarker(item) {
   if (!map) return;
   const color = getColor(item.type);
   const isVenue = ['pipeline','outdoor'].includes(item.type);
-  let line1 = '', line2 = '';
-  if (!isVenue && item.date !== '–') {
-    const parts = item.date.split(' ');
-    if (parts.length >= 3) { line1 = parts[1].replace(',',''); line2 = parts[2].replace(',',''); }
+  let l1='',l2='';
+  if (!isVenue && item.date!=='–') {
+    const p = item.date.split(' ');
+    if (p.length>=3) { l1=p[1].replace(',',''); l2=p[2].replace(',',''); }
   }
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="44" height="52" viewBox="0 0 44 52">
-    <ellipse cx="22" cy="50" rx="6" ry="2" fill="rgba(0,0,0,0.15)"/>
+    <ellipse cx="22" cy="50" rx="6" ry="2" fill="rgba(0,0,0,0.12)"/>
     <path d="M22 0C10 0 0 10 0 22C0 36 22 52 22 52S44 36 44 22C44 10 34 0 22 0Z" fill="${color}"/>
     <circle cx="22" cy="22" r="14" fill="rgba(255,255,255,0.18)"/>
-    ${line1&&line2
-      ? `<text x="22" y="19" text-anchor="middle" font-family="monospace" font-size="8" fill="rgba(255,255,255,0.9)" font-weight="500">${line1}</text>
-         <text x="22" y="30" text-anchor="middle" font-family="monospace" font-size="11" fill="#fff" font-weight="bold">${line2}</text>`
-      : isVenue
-      ? `<text x="22" y="27" text-anchor="middle" font-family="monospace" font-size="15" fill="rgba(255,255,255,0.7)">◎</text>`
-      : `<circle cx="22" cy="22" r="5" fill="rgba(255,255,255,0.6)"/>`}
+    ${l1&&l2?`<text x="22" y="19" text-anchor="middle" font-family="monospace" font-size="8" fill="rgba(255,255,255,0.9)" font-weight="500">${l1}</text><text x="22" y="30" text-anchor="middle" font-family="monospace" font-size="11" fill="#fff" font-weight="bold">${l2}</text>`
+    :isVenue?`<text x="22" y="27" text-anchor="middle" font-family="monospace" font-size="15" fill="rgba(255,255,255,0.6)">◎</text>`
+    :`<circle cx="22" cy="22" r="5" fill="rgba(255,255,255,0.6)"/>`}
   </svg>`;
   const marker = new google.maps.Marker({
-    position: { lat: item.lat, lng: item.lng }, map,
-    icon: { url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg), scaledSize: new google.maps.Size(36,43), anchor: new google.maps.Point(18,43) },
-    title: item.name, zIndex: isVenue ? 5 : 10
+    position:{lat:item.lat,lng:item.lng}, map,
+    icon:{url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),scaledSize:new google.maps.Size(36,43),anchor:new google.maps.Point(18,43)},
+    title:item.name, zIndex:isVenue?5:10,
   });
-  marker.addListener('click', () => selectItem(item.id));
+  marker.addListener('click',()=>selectMapItem(item.id));
   markers[item.id] = marker;
 }
 
 function renderLayerToggles() {
   const counts = {};
-  DATA.forEach(d => { if (d.month==='all'||d.month===currentMonth) counts[d.type]=(counts[d.type]||0)+1; });
-  document.getElementById('layer-toggles').innerHTML = LAYERS.map(l => `
+  DATA.forEach(d=>{if(d.month==='all'||d.month===currentMonth)counts[d.type]=(counts[d.type]||0)+1;});
+  document.getElementById('layer-toggles').innerHTML = LAYERS.map(l=>`
     <div class="layer-row">
-      <div class="layer-left">
-        <div class="ldot" style="background:${l.color}"></div>
-        <span class="lname">${l.name}</span>
-        <span class="lcount">(${counts[l.id]||0})</span>
-      </div>
-      <label class="toggle">
-        <input type="checkbox" ${layerVisible[l.id]!==false?'checked':''} onchange="toggleLayer('${l.id}',this.checked)">
-        <div class="ttrack"></div><div class="tthumb"></div>
-      </label>
+      <div class="layer-left"><div class="ldot" style="background:${l.color}"></div><span class="lname">${l.name}</span><span class="lcount">(${counts[l.id]||0})</span></div>
+      <label class="toggle"><input type="checkbox" ${layerVisible[l.id]!==false?'checked':''} onchange="toggleLayer('${l.id}',this.checked)"><div class="ttrack"></div><div class="tthumb"></div></label>
     </div>`).join('');
 }
 
 function renderSidebar(data) {
-  const shows = data.filter(d=>!['pipeline','outdoor'].includes(d.type)).sort((a,b)=>a.date.localeCompare(b.date));
-  const venues = data.filter(d=>['pipeline','outdoor'].includes(d.type)).sort((a,b)=>a.neighborhood.localeCompare(b.neighborhood));
-  let html = '';
-  if (shows.length) {
-    html += `<div class="list-gl">Shows (${shows.length})</div>`;
-    shows.forEach(item => html += listItemHTML(item));
+  const shows = data.filter(d=>d.date!=='–').sort((a,b)=>new Date(a.rawDate)-new Date(b.rawDate));
+  const venues = data.filter(d=>d.date==='–');
+  const today = new Date(); today.setHours(0,0,0,0);
+  const byDate = {};
+  shows.forEach(item=>{
+    const d = new Date(item.rawDate); if(isNaN(d)) return;
+    const k = d.toISOString().split('T')[0];
+    if(!byDate[k]) byDate[k]=[];
+    byDate[k].push(item);
+  });
+  let html='';
+  Object.keys(byDate).sort().forEach(dk=>{
+    const d=new Date(dk);
+    const isToday = d.toDateString()===today.toDateString();
+    html+=`<div class="list-date-group"><div class="ldg-num ${isToday?'today':''}">${d.getDate()}</div><div class="ldg-label">${d.toLocaleDateString('en-US',{weekday:'short'})} · ${d.toLocaleDateString('en-US',{month:'short'})}</div></div>`;
+    byDate[dk].forEach(item=>html+=sidebarItemHTML(item));
+  });
+  if(venues.length){
+    html+=`<div class="list-date-group"><div class="ldg-label" style="font-size:9px;padding:4px 0">Venues (${venues.length})</div></div>`;
+    venues.forEach(item=>html+=sidebarItemHTML(item));
   }
-  if (venues.length) {
-    html += `<div class="list-gl">Venues (${venues.length})</div>`;
-    venues.forEach(item => html += listItemHTML(item));
-  }
-  if (!html) html = '<div class="list-empty">Nothing matches filters.</div>';
-  document.getElementById('item-list').innerHTML = html;
+  if(!html) html='<div class="list-empty">Nothing matches.</div>';
+  document.getElementById('item-list').innerHTML=html;
+  const total=shows.length+venues.length;
+  document.getElementById('sb-count').textContent=`${shows.length} show${shows.length!==1?'s':''} · ${venues.length} venue${venues.length!==1?'s':''}`;
 }
 
-function listItemHTML(item) {
-  const color = getColor(item.type);
-  const active = selectedId === item.id;
-  const hasNote = item.notes && item.notes.trim().length > 0;
-  return `<div class="list-item ${active?'active':''}" style="border-left-color:${active?color:'transparent'}" onclick="selectItem('${item.id}')">
-    <div class="li-name" style="display:flex;align-items:center;justify-content:space-between">
-      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.name}</span>
-      ${hasNote ? `<span style="font-size:10px;margin-left:6px;flex-shrink:0;color:var(--artist)">📝</span>` : ''}
-    </div>
-    <div class="li-meta">
-      <span class="badge" style="background:${color}18;color:${color}">${getLabel(item.type)}</span>
-      ${item.date!=='–'?`<span style="font-size:11px;color:var(--muted)">${item.date}</span>`:''}
-    </div>
+function sidebarItemHTML(item) {
+  const color=getColor(item.type), sel=selectedId===item.id;
+  return `<div class="list-item ${sel?'sel':''}" style="border-left-color:${color}" onclick="selectMapItem('${item.id}')">
+    <div class="li-name">${item.name}${item.notes?'  📝':''}</div>
+    <div class="li-meta"><span class="badge" style="background:${color}16;color:${color}">${getLabel(item.type)}</span></div>
     <div class="li-sub">${item.neighborhood}${item.area&&item.area!==item.neighborhood?' · '+item.area:''}${item.cap?' · '+item.cap+' cap':''}</div>
   </div>`;
 }
 
-let listMode = 'calendar';
-
-function setListMode(mode) {
-  listMode = mode;
-  document.getElementById('vm-cal').classList.toggle('active', mode==='calendar');
-  document.getElementById('vm-grid').classList.toggle('active', mode==='grid');
-  document.getElementById('lv-calendar').style.display = mode==='calendar' ? '' : 'none';
-  document.getElementById('lv-grid').style.display = mode==='grid' ? '' : 'none';
-}
-
-function renderListView(data) {
-  renderCalendarView(data);
-  renderGridView(data);
-}
-
-function renderCalendarView(data) {
-  const cal = document.getElementById('lv-calendar');
-  const shows = data.filter(d => d.date !== '–').sort((a,b) => new Date(a.date) - new Date(b.date));
-  const venues = data.filter(d => d.date === '–');
-  if (!shows.length && !venues.length) { cal.innerHTML = '<div class="list-empty">Nothing matches.</div>'; return; }
-
-  const weeks = {};
-  const today = new Date();
-  shows.forEach(item => {
-    const d = new Date(item.date);
-    if (isNaN(d)) return;
-    const mon = new Date(d);
-    mon.setDate(d.getDate() - ((d.getDay()+6)%7));
-    const wk = mon.toISOString().split('T')[0];
-    if (!weeks[wk]) weeks[wk] = {};
-    const dayKey = d.toISOString().split('T')[0];
-    if (!weeks[wk][dayKey]) weeks[wk][dayKey] = [];
-    weeks[wk][dayKey].push(item);
-  });
-
-  let html = '';
-  Object.keys(weeks).sort().forEach(wk => {
-    const monDate = new Date(wk);
-    const sunDate = new Date(wk); sunDate.setDate(monDate.getDate()+6);
-    const fmt = d => d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    html += `<div class="cal-week"><div class="cal-week-label">Week of ${fmt(monDate)} – ${fmt(sunDate)}</div>`;
-    const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-    for (let i = 0; i < 7; i++) {
-      const dayDate = new Date(wk); dayDate.setDate(monDate.getDate()+i);
-      const dayKey = dayDate.toISOString().split('T')[0];
-      const dayShows = weeks[wk][dayKey] || [];
-      if (!dayShows.length) continue;
-      const isToday = dayDate.toDateString() === today.toDateString();
-      html += `<div class="cal-day-row">
-        <div class="cal-day-label">
-          <div class="cal-day-name">${dayNames[i]}</div>
-          <div class="cal-day-num ${isToday?'today':''}">${dayDate.getDate()}</div>
-        </div>
-        <div class="cal-shows">
-          ${dayShows.map(item => {
-            const color = getColor(item.type);
-            return `<div class="cal-show-chip" style="border-left-color:${color}" onclick="selectItem('${item.id}')">
-              <div class="cal-show-name">${item.name}</div>
-              <div class="cal-show-meta">
-                <span class="badge" style="background:${color}18;color:${color}">${getLabel(item.type)}</span>
-                <span style="font-size:11px;color:var(--muted)">${item.neighborhood}${item.area&&item.area!==item.neighborhood?' · '+item.area:''}</span>
-                ${item.cap?`<span style="font-size:11px;color:var(--muted)">${item.cap} cap</span>`:''}
-                ${item.lead?`<span style="font-size:11px;color:var(--muted)">Lead: ${item.lead}</span>`:''}
-              </div>
-              ${item.notes?`<div class="cal-show-note">📝 ${item.notes.substring(0,120)}${item.notes.length>120?'…':''}</div>`:''}
-            </div>`;
-          }).join('')}
-        </div>
-      </div>`;
-    }
-    html += `</div>`;
-  });
-
-  if (venues.length) {
-    html += `<div class="cal-week">
-      <div class="cal-week-label">Pipeline & Outdoor Venues (${venues.length})</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">
-        ${venues.map(item => {
-          const color = getColor(item.type);
-          return `<div class="cal-show-chip" style="border-left-color:${color}" onclick="selectItem('${item.id}')">
-            <div class="cal-show-name">${item.name}</div>
-            <div class="cal-show-meta">
-              <span class="badge" style="background:${color}18;color:${color}">${item.status}</span>
-              <span style="font-size:11px;color:var(--muted)">${item.area||item.neighborhood}</span>
-            </div>
-            ${item.notes?`<div class="cal-show-note">📝 ${item.notes.substring(0,80)}${item.notes.length>80?'…':''}</div>`:''}
-          </div>`;
-        }).join('')}
-      </div>
-    </div>`;
-  }
-
-  cal.innerHTML = html || '<div class="list-empty">Nothing to show.</div>';
-}
-
-function renderGridView(data) {
-  const sorted = [...data].sort((a,b)=>a.date.localeCompare(b.date));
-  document.getElementById('lv-grid').innerHTML = sorted.length ? sorted.map(item => {
-    const color = getColor(item.type);
-    return `<div class="lv-card" style="border-left-color:${color}" onclick="selectItem('${item.id}')">
-      <div class="lv-name">${item.name}</div>
-      <div class="lv-meta">
-        <span class="badge" style="background:${color}18;color:${color}">${getLabel(item.type)}</span>
-        ${item.date!=='–'?`<span style="font-size:11px;color:var(--muted)">${item.date}</span>`:''}
-      </div>
-      <div class="lv-fields">
-        <div><div class="lv-fl">Area</div><div class="lv-fv">${item.area||item.neighborhood}</div></div>
-        <div><div class="lv-fl">Capacity</div><div class="lv-fv">${item.cap||'–'}</div></div>
-        <div><div class="lv-fl">Format</div><div class="lv-fv">${item.format}</div></div>
-        <div><div class="lv-fl">Status</div><div class="lv-fv">${item.status}</div></div>
-      </div>
-      ${item.notes?`<div class="lv-note">📝 ${item.notes.substring(0,100)}${item.notes.length>100?'…':''}</div>`:''}
-    </div>`;
-  }).join('') : '<div class="list-empty">Nothing matches.</div>';
-}
-
-// ═══════════════════════════════════════════════════
-// INTERACTIONS
-// ═══════════════════════════════════════════════════
-function selectItem(id) {
-  selectedId = id;
-  const item = DATA.find(i=>i.id===id);
-  if (!item) return;
-  if (map && markers[id]) map.panTo({lat:item.lat, lng:item.lng});
+function selectMapItem(id) {
+  selectedId=id;
+  const item=DATA.find(i=>i.id===id); if(!item) return;
+  if(map&&markers[id]) map.panTo({lat:item.lat,lng:item.lng});
+  const color=getColor(item.type);
   document.getElementById('detail-panel').classList.add('open');
-  const color = getColor(item.type);
-  document.getElementById('d-type').textContent = getLabel(item.type);
-  document.getElementById('d-type').style.color = color;
-  document.getElementById('d-name').textContent = item.name;
-  document.getElementById('d-hood').textContent = item.neighborhood;
-  document.getElementById('d-date').textContent = item.date!=='–' ? `${item.date}${item.day?' ('+item.day+')':''}` : '–';
-  document.getElementById('d-area').textContent = item.area || '–';
-  document.getElementById('d-cap').textContent = item.cap ? `${item.cap} guests` : '–';
-  document.getElementById('d-format').textContent = item.format;
-  document.getElementById('d-status').textContent = item.status;
-  const aw = document.getElementById('d-artist-wrap');
-  aw.style.display = item.artist ? '' : 'none';
-  document.getElementById('d-artist').textContent = item.artist || '';
-  const lw = document.getElementById('d-lead-wrap');
-  lw.style.display = item.lead ? '' : 'none';
-  document.getElementById('d-lead').textContent = item.lead || '';
-
-  // Coords
-  const coordsEl = document.getElementById('d-coords');
-  const hintEl = document.getElementById('d-coord-hint');
-  if (item.hasExactCoords) {
-    coordsEl.textContent = `${parseFloat(item.rawLat).toFixed(5)}, ${parseFloat(item.rawLng).toFixed(5)}`;
-    coordsEl.style.color = 'var(--muted)';
-    hintEl.style.display = 'none';
-  } else {
-    coordsEl.textContent = 'Estimated from area — no exact coordinates';
-    coordsEl.style.color = 'var(--muted)';
-    hintEl.style.display = '';
-  }
-
-  document.getElementById('d-notes').value = item.notes || '';
-  const btn = document.getElementById('save-btn');
-  btn.classList.remove('saved'); btn.textContent = 'SAVE TO DATABASE';
+  document.getElementById('dp-type').textContent=getLabel(item.type);
+  document.getElementById('dp-type').style.color=color;
+  document.getElementById('dp-name').textContent=item.name;
+  document.getElementById('dp-hood').textContent=item.neighborhood;
+  document.getElementById('dp-date').textContent=item.date!=='–'?`${item.date}${item.day?' ('+item.day+')':''}`:item.date;
+  document.getElementById('dp-area').textContent=item.area||'–';
+  document.getElementById('dp-cap').textContent=item.cap?item.cap+' guests':'–';
+  document.getElementById('dp-format').textContent=item.format;
+  document.getElementById('dp-status').textContent=item.status;
+  const lr=document.getElementById('dp-lead-row');
+  lr.style.display=item.lead?'':'none';
+  document.getElementById('dp-lead').textContent=item.lead;
+  document.getElementById('dp-notes').value=item.notes||'';
+  document.getElementById('dp-save').textContent='Save to Database';
   renderSidebar(getFiltered());
 }
 
 function closeDetail() {
   document.getElementById('detail-panel').classList.remove('open');
-  selectedId = null;
-  renderSidebar(getFiltered());
+  selectedId=null; renderSidebar(getFiltered());
 }
 
-function toggleLayer(type, visible) {
-  layerVisible[type] = visible;
-  Object.entries(markers).forEach(([id, m]) => {
-    const item = DATA.find(i=>i.id===id);
-    if (item && item.type===type) m.setVisible && m.setVisible(visible);
-  });
-  renderSidebar(getFiltered());
-}
-
-function updateCap() {
-  capMin = parseInt(document.getElementById('capmin').value);
-  capMax = parseInt(document.getElementById('capmax').value);
-  document.getElementById('capminv').textContent = capMin;
-  document.getElementById('capmaxv').textContent = capMax >= 300 ? '300+' : capMax;
-  renderAll();
-}
-
-function changeMonth(dir) {
-  const [y,m] = currentMonth.split('-').map(Number);
-  const d = new Date(y, m-1+dir, 1);
-  currentMonth = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-  document.getElementById('month-label').textContent = d.toLocaleString('default',{month:'long',year:'numeric'});
-  renderAll();
-}
-
-function setView(v) {
-  currentView = v;
-  document.getElementById('btn-map').classList.toggle('active', v==='map');
-  document.getElementById('btn-list').classList.toggle('active', v==='list');
-  document.getElementById('list-view').classList.toggle('active', v==='list');
-}
-
-async function refreshData() {
-  setSyncState('syncing', 'Syncing...');
-  await loadAllData();
-  renderAll();
-  showToast('Synced with database');
-}
-
-// ═══════════════════════════════════════════════════
-// SAVE NOTES
-// ═══════════════════════════════════════════════════
 async function saveNote() {
-  if (!selectedId) return;
-  const item = DATA.find(i=>i.id===selectedId);
-  if (!item) return;
-  const notes = document.getElementById('d-notes').value;
-  const btn = document.getElementById('save-btn');
-  btn.textContent = 'SAVING...';
-  const { error } = await sb.from(item.table).update({ notes }).eq('id', item.db_id);
-  if (error) {
-    showToast('Save failed: ' + error.message, true);
-    btn.textContent = 'SAVE TO DATABASE';
-  } else {
-    item.notes = notes;
-    btn.textContent = '✓ SAVED'; btn.classList.add('saved');
-    setTimeout(() => { btn.textContent = 'SAVE TO DATABASE'; btn.classList.remove('saved'); }, 2500);
-    showToast('Note saved');
-    renderSidebar(getFiltered());
-    renderListView(getFiltered());
-  }
+  if(!selectedId) return;
+  const item=DATA.find(i=>i.id===selectedId); if(!item) return;
+  const notes=document.getElementById('dp-notes').value;
+  const btn=document.getElementById('dp-save');
+  btn.textContent='Saving...';
+  const {error}=await sb.from(item.table).update({notes}).eq('id',item.db_id);
+  if(error){showToast('Save failed',true);btn.textContent='Save to Database';}
+  else{item.notes=notes;btn.textContent='✓ Saved';setTimeout(()=>btn.textContent='Save to Database',2000);showToast('Note saved');}
 }
 
-// ═══════════════════════════════════════════════════
-// IMPORT
-// ═══════════════════════════════════════════════════
-const SCHEDULE_FIELDS = [
-  { key:'date', label:'Date', required:true },
-  { key:'day_of_week', label:'Day of Week' },
-  { key:'venue', label:'Venue Name', required:true },
-  { key:'neighborhood', label:'Neighborhood' },
-  { key:'type', label:'Type (Artist Hosted / Discovery etc.)' },
-  { key:'area', label:'Area' },
-  { key:'show_lead', label:'Show Lead' },
-  { key:'capacity', label:'Capacity' },
-  { key:'lat', label:'Latitude (for exact map pin)' },
-  { key:'lng', label:'Longitude (for exact map pin)' },
-  { key:'notes', label:'Notes' },
-  { key:'uploaded_to_event_planner', label:'Uploaded to Event Planner' },
-  { key:'merchandising_completed', label:'Merchandising Completed' },
-];
-const VENUE_FIELDS = [
-  { key:'venue_name', label:'Venue Name', required:true },
-  { key:'neighborhood', label:'Neighborhood' },
-  { key:'area', label:'Area' },
-  { key:'capacity', label:'Capacity' },
-  { key:'byod_bar', label:'BYOB or Bar' },
-  { key:'status', label:'Status' },
-  { key:'lat', label:'Latitude (for exact map pin)' },
-  { key:'lng', label:'Longitude (for exact map pin)' },
-  { key:'notes', label:'Notes' },
-];
-const ARTIST_FIELDS = [
-  { key:'date', label:'Date' },
-  { key:'day', label:'Day' },
-  { key:'headliner', label:'Headliner', required:true },
-  { key:'venue_status', label:'Venue Status' },
-  { key:'venue_booked', label:'Venue Booked' },
-  { key:'opener_1', label:'Opener 1' },
-  { key:'opener_2', label:'Opener 2' },
-  { key:'venue_ideas', label:'Venue Ideas' },
-  { key:'notes', label:'Notes' },
-];
-
-function getFields(table) {
-  if (table==='venue_list') return VENUE_FIELDS;
-  if (table==='artist_hosted') return ARTIST_FIELDS;
-  return SCHEDULE_FIELDS;
-}
-
-function parseCSV(text) {
-  return text.trim().split('\n').map(line => {
-    if (!line.includes('"')) return line.split(/,|\t/).map(c=>c.trim());
-    const res=[]; let cur='', inQ=false;
-    for (const c of line) {
-      if (c==='"') inQ=!inQ;
-      else if ((c===','||c==='\t')&&!inQ) { res.push(cur.trim()); cur=''; }
-      else cur+=c;
-    }
-    res.push(cur.trim()); return res;
+function toggleLayer(type,visible) {
+  layerVisible[type]=visible;
+  Object.entries(markers).forEach(([id,m])=>{
+    const item=DATA.find(i=>i.id===id);
+    if(item&&item.type===type) m.setVisible&&m.setVisible(visible);
   });
+  renderSidebar(getFiltered());
+}
+function updateCap() {
+  capMin=parseInt(document.getElementById('capmin').value);
+  capMax=parseInt(document.getElementById('capmax').value);
+  document.getElementById('capminv').textContent=capMin;
+  document.getElementById('capmaxv').textContent=capMax>=300?'300+':capMax;
+  renderAll();
+}
+function toggleFilters() {
+  filterOpen=!filterOpen;
+  document.getElementById('filter-drawer').classList.toggle('open',filterOpen);
+}
+function changeMonth(dir) {
+  const [y,m]=currentMonth.split('-').map(Number);
+  const d=new Date(y,m-1+dir,1);
+  currentMonth=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('month-label').textContent=d.toLocaleString('default',{month:'long',year:'numeric'});
+  renderAll(); renderWeek();
+}
+async function refreshData() {
+  setSyncState('syncing');
+  await loadData();
+  showToast('Synced');
 }
 
-function autoMap(headers, fields) {
-  const m = {};
-  const n = s => s.toLowerCase().replace(/[^a-z0-9]/g,'');
-  fields.forEach(f => {
-    const idx = headers.findIndex(h => {
-      const hn = n(h);
-      if (f.key==='date') return hn==='date'||hn.includes('showdate');
-      if (f.key==='day_of_week'||f.key==='day') return hn==='day'||hn==='dayofweek';
-      if (f.key==='venue') return hn==='venue'||hn==='venuename';
-      if (f.key==='venue_name') return hn.includes('venuename')||hn==='venue';
-      if (f.key==='neighborhood') return hn.includes('neighbor');
-      if (f.key==='type') return hn==='type'||hn==='showtype';
-      if (f.key==='area') return hn==='area';
-      if (f.key==='show_lead') return hn.includes('lead');
-      if (f.key==='capacity') return hn.includes('cap');
-      if (f.key==='byod_bar') return hn.includes('byob')||hn.includes('bar');
-      if (f.key==='headliner') return hn.includes('head')||hn==='artist';
-      if (f.key==='venue_status') return hn==='venuestatus'||hn==='status';
-      if (f.key==='venue_booked') return hn.includes('booked');
-      if (f.key==='opener_1') return hn==='opener1'||hn==='opener';
-      if (f.key==='opener_2') return hn==='opener2';
-      if (f.key==='venue_ideas') return hn.includes('idea');
-      if (f.key==='notes') return hn==='notes';
-      if (f.key==='lat') return hn==='lat'||hn==='latitude';
-      if (f.key==='lng') return hn==='lng'||hn==='lon'||hn==='longitude';
-      if (f.key==='status') return hn==='status';
-      return false;
+// ══════════════════════════════════════════
+// WEEK VIEW
+// ══════════════════════════════════════════
+// Static mock data for demo reliability (week of Mar 16-22, Mar 23-29)
+const WEEK_DATA = {
+  '2026-03-16': [
+    {id:'w1',venue:'Melrose Umbrella Co.',type:'artist',area:'Hollywood + WeHo',cap:70,lead:'Ben',status:'confirmed',notes:'wil update after venue call'},
+  ],
+  '2026-03-19': [
+    {id:'w2',venue:'Secret Walls',type:'artist',area:'Central LA',cap:75,lead:'Lauren',status:'confirmed',notes:''},
+  ],
+  '2026-03-20': [
+    {id:'w3',venue:'Breakroom 86',type:'regular',area:'Central LA',cap:100,lead:'Ben',status:'confirmed',notes:'Great room. Bar opens at 7, load-in at 6.'},
+  ],
+  '2026-03-21': [
+    {id:'w4',venue:'The Bird House',type:'regular',area:'Westside',cap:75,lead:'Ben',status:'confirmed',notes:''},
+    {id:'w5',venue:'SEED People\'s Market',type:'regular',area:'Orange County',cap:120,lead:'Anna',status:'confirmed',notes:''},
+  ],
+  '2026-03-25': [
+    {id:'w6',venue:'Melrose Umbrella Co.',type:'artist',area:'Hollywood + WeHo',cap:70,lead:'Lauren',status:'confirmed',notes:''},
+    {id:'w7',venue:'Chloe\'s at Golden Road',type:'artist',area:'Eastside',cap:55,lead:'Ben',status:'confirmed',notes:'waiting for artist photo'},
+  ],
+  '2026-03-26': [
+    {id:'w8',venue:'Venue Needed',type:'partnership',area:'Eastside',cap:60,lead:'',status:'novenue',notes:'Rain Ezra · ~60 cap · Eastside crowd'},
+  ],
+  '2026-03-27': [
+    {id:'w9',venue:'LAAMP',type:'regular',area:'Westside',cap:90,lead:'Ben',status:'confirmed',notes:''},
+  ],
+};
+const WEEK_DETAIL_DATA = {
+  'w3': {
+    name:'Breakroom 86',eyebrow:'Regular Show · Fri Mar 20',loc:'Koreatown · Central LA · 100 cap · Bar',
+    stats:[{val:'87%',lbl:'Avg fill\nlast 3 shows',color:'var(--teal)'},{val:'4',lbl:'Total\nshows hosted',color:'var(--text)'},{val:'91',lbl:'Best\nattendance',color:'var(--amber)'}],
+    history:[
+      {date:'Jan 24',show:'Regular Show',sub:'3 artists · Lead: Ben',pct:91,fill:'var(--teal)'},
+      {date:'Nov 15',show:'Regular Show',sub:'3 artists · Lead: Lauren',pct:84,fill:'var(--teal)'},
+      {date:'Aug 9',show:'Artist-Hosted',sub:'Reanna Shay headline',pct:78,fill:'var(--amber)'},
+      {date:'May 3',show:'Regular Show',sub:'3 artists · Lead: Ben',pct:63,fill:'var(--amber)'},
+    ],
+    hoods:[
+      {name:'Koreatown',pct:87,color:'var(--teal)',shows:'4 shows · avg 87 tickets'},
+      {name:'West Adams',pct:74,color:'var(--amber)',shows:'3 shows · avg 56 tickets'},
+      {name:'Mid-City',pct:61,color:'var(--amber)',shows:'5 shows · avg 46 tickets'},
+      {name:'Echo Park',pct:52,color:'var(--coral)',shows:'2 shows · avg 39 tickets'},
+    ],
+    notes:'Great room for regular shows. Bar opens at 7, load-in at 6. Parking structure on 5th St.',
+  },
+};
+
+let currentWeekStart = new Date('2026-03-16');
+
+function getWeekDates(startDate) {
+  const dates = [];
+  for (let i=0;i<7;i++) {
+    const d=new Date(startDate); d.setDate(startDate.getDate()+i);
+    dates.push(d);
+  }
+  return dates;
+}
+
+function fmtWeekRange(start) {
+  const end=new Date(start); end.setDate(start.getDate()+6);
+  const mo = d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  return `${mo(start)} – ${mo(end)}, ${start.getFullYear()}`;
+}
+
+function changeWeek(dir) {
+  currentWeekStart=new Date(currentWeekStart);
+  currentWeekStart.setDate(currentWeekStart.getDate()+dir*7);
+  renderWeek();
+}
+
+function renderWeek() {
+  const dates=getWeekDates(currentWeekStart);
+  document.getElementById('week-range').textContent=fmtWeekRange(currentWeekStart);
+
+  const today=new Date(); today.setHours(0,0,0,0);
+  const dayNames=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+  let confirmed=0, novenue=0;
+  // Count for this week
+  dates.forEach(d=>{
+    const k=d.toISOString().split('T')[0];
+    (WEEK_DATA[k]||[]).forEach(s=>{
+      if(s.status==='confirmed') confirmed++;
+      if(s.status==='novenue') novenue++;
     });
-    if (idx>=0) m[f.key]=idx;
   });
-  return m;
-}
+  document.getElementById('wstat-confirmed').textContent=confirmed;
+  document.getElementById('wstat-novenue').textContent=novenue;
 
-function renderColMapper(headers, fields, containerId) {
-  colMap = autoMap(headers, fields);
-  document.getElementById(containerId).innerHTML = fields.map(f=>`
-    <div class="col-grid">
-      <div class="col-label">${f.label}${f.required?'<span style="color:var(--partnership)"> *</span>':''}</div>
-      <div class="col-arrow">→</div>
-      <select class="col-select" data-field="${f.key}" onchange="colMap['${f.key}']=parseInt(this.value)">
-        ${['(skip)',...headers].map((h,i)=>`<option value="${i-1}" ${colMap[f.key]===i-1?'selected':''}>${h}</option>`).join('')}
-      </select>
-    </div>`).join('');
-}
-
-function renderPreview(rows, headers, tableId) {
-  document.getElementById(tableId).innerHTML = `
-    <thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
-    <tbody>${rows.slice(0,3).map(r=>`<tr>${r.map(c=>`<td>${c||''}</td>`).join('')}</tr>`).join('')}</tbody>`;
-}
-
-function parsePaste() {
-  const raw = document.getElementById('paste-input').value;
-  if (!raw.trim()) { document.getElementById('paste-preview').style.display='none'; return; }
-  const rows = parseCSV(raw);
-  if (rows.length < 2) return;
-  parsedHeaders = rows[0]; parsedRows = rows.slice(1).filter(r=>r.some(c=>c));
-  const table = document.getElementById('paste-table').value;
-  document.getElementById('paste-preview').style.display='block';
-  renderColMapper(parsedHeaders, getFields(table), 'col-mapper');
-  renderPreview(parsedRows, parsedHeaders, 'preview-table');
-}
-
-function handleDrop(e) {
-  e.preventDefault();
-  document.getElementById('drop-zone').classList.remove('over');
-  if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
-}
-
-function handleFile(e) { if (e.target.files[0]) processFile(e.target.files[0]); }
-
-function processFile(file) {
-  const reader = new FileReader();
-  reader.onload = e => {
-    const rows = parseCSV(e.target.result);
-    if (rows.length < 2) return;
-    parsedHeaders = rows[0]; parsedRows = rows.slice(1).filter(r=>r.some(c=>c));
-    const table = document.getElementById('upload-table').value;
-    document.getElementById('upload-preview').style.display = 'block';
-    renderColMapper(parsedHeaders, getFields(table), 'upload-col-mapper');
-    renderPreview(parsedRows, parsedHeaders, 'upload-preview-table');
-    document.getElementById('dz-text').textContent = `✓ ${file.name} — ${parsedRows.length} rows`;
-  };
-  reader.readAsText(file);
-}
-
-async function confirmImport() {
-  if (!parsedRows.length) { showToast('No data to import', true); return; }
-  document.querySelectorAll('[data-field]').forEach(sel => {
-    const v = parseInt(sel.value);
-    if (!isNaN(v) && v >= 0) colMap[sel.dataset.field] = v;
+  // Alerts
+  let alerts='';
+  if(novenue>0) alerts+=`<div class="alert-banner coral">⚑ <span><strong>Action needed:</strong> ${novenue} show${novenue>1?'s':''} this week still need${novenue===1?'s':''} a venue booked.</span></div>`;
+  const hasSatFri = dates.some((d,i)=>{
+    const k=d.toISOString().split('T')[0];
+    return (WEEK_DATA[k]||[]).length>0 && (i===4||i===5);
   });
-  const table = importActive==='paste'
-    ? document.getElementById('paste-table').value
-    : document.getElementById('upload-table').value;
-  const fields = getFields(table);
-  const get = (row, key) => colMap[key]>=0 ? (row[colMap[key]]||'').trim() : '';
-  const records = parsedRows.map(row => {
-    const rec = {};
-    fields.forEach(f => { const v = get(row, f.key); if (v) rec[f.key] = v; });
-    return rec;
-  }).filter(r => Object.keys(r).length > 0);
+  document.getElementById('week-alerts').innerHTML=alerts;
 
-  if (!records.length) { showToast('No valid rows found', true); return; }
-  setSyncState('syncing', 'Importing...');
-  const { error } = await sb.from(table).insert(records);
-  if (error) {
-    showToast('Import failed: ' + error.message, true);
-    setSyncState('error', 'Error');
+  // Headers
+  let headHtml='<div class="wgh-gutter"></div>';
+  dates.forEach((d,i)=>{
+    const k=d.toISOString().split('T')[0];
+    const shows=WEEK_DATA[k]||[];
+    const isToday=d.toDateString()===today.toDateString();
+    const hasNV=shows.some(s=>s.status==='novenue');
+    headHtml+=`<div class="wgh-cell${shows.length?' has-show':''}${hasNV?' needs-venue':''}">
+      <div class="wgh-dayname">${dayNames[i]}</div>
+      <div class="wgh-daynum${isToday?' today':''}">${d.getDate()}</div>
+    </div>`;
+  });
+  document.getElementById('week-grid-headers').innerHTML=headHtml;
+
+  // Build area gutter text
+  const areasByDay=dates.map(d=>{
+    const k=d.toISOString().split('T')[0];
+    return (WEEK_DATA[k]||[]).map(s=>s.area).join('\n');
+  });
+
+  // Body
+  let bodyHtml=`<div class="wgb-gutter"><div class="gutter-area">${areasByDay.map(a=>a||'').join('\n').split('\n').map(a=>`<div>${a}</div>`).join('')}</div></div>`;
+  dates.forEach((d,i)=>{
+    const k=d.toISOString().split('T')[0];
+    const shows=WEEK_DATA[k]||[];
+    if(!shows.length){ bodyHtml+=`<div class="wgb-cell wgb-empty"></div>`; return; }
+    let cellHtml=`<div class="wgb-cell">`;
+    shows.forEach(s=>{
+      const color=getColor(s.type);
+      cellHtml+=`<div class="show-block" style="border-left-color:${color};background:${color}0D" onclick="selectWeekShow('${s.id}')">
+        <div class="status-pip ${s.status==='novenue'?'pip-novenue':'pip-confirmed'}"></div>
+        <div class="sb-name">${s.venue}</div>
+        <div class="sb-tags"><span class="sb-tag" style="background:${color}18;color:${color}">${getLabel(s.type)}</span></div>
+        ${s.lead?`<div class="sb-lead">Lead: ${s.lead}</div>`:''}
+        ${s.notes?`<div class="sb-lead" style="color:var(--muted);font-style:italic">${s.notes.substring(0,50)}${s.notes.length>50?'…':''}</div>`:''}
+      </div>`;
+    });
+    cellHtml+=`</div>`;
+    bodyHtml+=cellHtml;
+  });
+  document.getElementById('week-grid-body').innerHTML=bodyHtml;
+
+  // Reset detail
+  document.getElementById('week-detail').innerHTML=`<div class="wdp-empty"><div class="wdp-empty-icon">👆</div><div style="font-size:12px;color:var(--muted)">Click a show to see<br>venue details & history</div></div>`;
+}
+
+function selectWeekShow(id) {
+  // Find show in WEEK_DATA
+  let show = null;
+  Object.values(WEEK_DATA).forEach(arr => arr.forEach(s => { if(s.id===id) show=s; }));
+  if(!show) return;
+
+  // Use Airtable data if loaded, otherwise show basic panel
+  if (atLoaded) {
+    renderWeekDetailWithAirtable(show);
   } else {
-    closeModal('import-modal');
-    showToast(`Imported ${records.length} rows`);
-    await loadAllData(); renderAll();
-    parsedRows=[]; parsedHeaders=[];
+    const color = getColor(show.type);
+    document.getElementById('week-detail').innerHTML = `
+      <div class="wdp-top">
+        <div class="wdp-eyebrow" style="color:${color}">${getLabel(show.type)}</div>
+        <div class="wdp-name">${show.venue}</div>
+        <div class="wdp-loc">${show.area}${show.cap?' · '+show.cap+' cap':''}${show.lead?' · Lead: '+show.lead:''}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:10px;padding:8px 10px;background:var(--surface2);border-radius:4px">
+          ⏳ Loading Airtable history...
+        </div>
+      </div>
+      <div class="wdp-notes">
+        <textarea class="notes-ta" placeholder="Add notes...">${show.notes||''}</textarea>
+        <div class="wdp-action-row">
+          <div class="wdp-btn">Open in Maps</div>
+          <div class="wdp-btn primary">Save Notes</div>
+        </div>
+      </div>`;
+    // Retry once Airtable loads
+    loadAirtableData().then(() => renderWeekDetailWithAirtable(show));
   }
 }
 
-// ═══════════════════════════════════════════════════
-// LIVE SYNC
-// ═══════════════════════════════════════════════════
-function getSyncUrls() {
-  try { return JSON.parse(localStorage.getItem('sofar-sync-urls') || '{}'); } catch { return {}; }
-}
+// ══════════════════════════════════════════
+// CHAT
+// ══════════════════════════════════════════
+function buildSystemPrompt() {
+  // ── SCHEDULED SHOWS: next 90 days from today, sorted chronologically ──
+  const today = new Date(); today.setHours(0,0,0,0);
+  const horizon = new Date(today); horizon.setDate(today.getDate() + 90);
 
-function saveSyncUrls() {
-  const urls = {
-    calendar: document.getElementById('sync-cal-url').value.trim(),
-    venue: document.getElementById('sync-venue-url').value.trim(),
-    artist: document.getElementById('sync-artist-url').value.trim(),
-  };
-  localStorage.setItem('sofar-sync-urls', JSON.stringify(urls));
-  testAndSync(urls);
-}
+  const upcomingShows = DATA
+    .filter(d => d.rawDate && d.date !== '–' && d.type !== 'pipeline' && d.type !== 'hosted')
+    .map(d => ({ ...d, _dt: new Date(d.rawDate) }))
+    .filter(d => !isNaN(d._dt) && d._dt >= today && d._dt <= horizon)
+    .sort((a,b) => a._dt - b._dt);
 
-async function testAndSync(urls) {
-  const results = document.getElementById('sync-results');
-  results.style.display = 'block';
-  results.innerHTML = '<div class="info-box" style="color:var(--artist)">Testing connections...</div>';
-  const tasks = [
-    { table:'2026_calendar', url:urls.calendar, label:'2026 Calendar' },
-    { table:'venue_list',    url:urls.venue,    label:'Venue List' },
-    { table:'artist_hosted', url:urls.artist,   label:'Artist-Hosted' },
-  ].filter(t => t.url);
-  if (!tasks.length) { results.innerHTML = '<div class="info-box">No URLs entered yet.</div>'; return; }
-  let html = '', anySuccess = false;
-  for (const task of tasks) {
-    try {
-      const res = await fetch(task.url);
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const text = await res.text();
-      const rows = parseCSV(text);
-      if (rows.length < 2) throw new Error('No data rows');
-      const fields = getFields(task.table);
-      const headers = rows[0];
-      const cmap = autoMap(headers, fields);
-      const get = (row, key) => cmap[key]>=0 ? (row[cmap[key]]||'').trim() : '';
-      const records = rows.slice(1).filter(r=>r.some(c=>c)).map(row => {
-        const rec = {};
-        fields.forEach(f => { const v = get(row, f.key); if (v) rec[f.key] = v; });
-        return rec;
-      }).filter(r => Object.keys(r).length > 0);
-      if (records.length) {
-        const { error } = await sb.from(task.table).upsert(records, { ignoreDuplicates: false });
-        if (error) throw new Error(error.message);
-      }
-      html += `<div class="info-box teal" style="margin-bottom:8px">✓ <strong>${task.label}</strong> — ${records.length} rows synced</div>`;
-      anySuccess = true;
-    } catch(e) {
-      html += `<div class="info-box" style="margin-bottom:8px;border-left:3px solid var(--partnership)">✗ <strong>${task.label}</strong> — ${e.message}</div>`;
+  const showList = upcomingShows.length > 0
+    ? upcomingShows.map(s =>
+        `- ${s.date}${s.day?' ('+s.day+')':''}: "${s.name}" | ${s.format} | ${s.neighborhood}, ${s.area} | Lead: ${s.lead||'TBD'} | Cap: ${s.cap||'?'}`
+      ).join('\n')
+    : '(No show data loaded — Supabase may still be syncing)';
+
+  // ── PIPELINE VENUES with notes ──
+  const venues = DATA.filter(d => d.type === 'pipeline');
+  const venueList = venues.length > 0
+    ? venues.map(v => {
+        const atStats = getVenueStats(v.name);
+        const perfStr = atStats
+          ? ` | ${atStats.pastEvents} past shows | avg ${Math.round(atStats.avgTickets)} tickets | avg $${Math.round(atStats.avgRevenue)} rev`
+          : '';
+        const notesStr = v.notes ? `\n  Notes: ${v.notes.trim()}` : '';
+        return `- "${v.name}" | ${v.neighborhood}, ${v.area} | Cap: ${v.cap||'?'}${perfStr}${notesStr}`;
+      }).join('\n')
+    : '(No pipeline venues loaded)';
+
+  // ── ALL VENUES with your operational notes ──
+  const allVenuesWithNotes = DATA
+    .filter(d => d.notes && d.notes.trim().length > 0)
+    .reduce((acc, d) => {
+      const key = d.name.toLowerCase().trim();
+      if (!acc[key]) acc[key] = d;
+      return acc;
+    }, {});
+  const notesContext = Object.values(allVenuesWithNotes).length > 0
+    ? '\nYOUR VENUE NOTES (operational intelligence):\n' +
+      Object.values(allVenuesWithNotes)
+        .map(v => `- "${v.name}" (${v.neighborhood}): ${v.notes.trim()}`)
+        .join('\n')
+    : '';
+
+  // ── AIRTABLE PERFORMANCE DATA ──
+  let venuePerf = '';
+  if (atLoaded && Object.keys(AT_VENUES).length > 0) {
+    const topVenues = Object.values(AT_VENUES)
+      .filter(v => v.pastEvents > 0)
+      .sort((a,b) => b.pastEvents - a.pastEvents)
+      .slice(0, 20);
+    if (topVenues.length) {
+      venuePerf = '\nLA VENUE PERFORMANCE (18 months of Airtable history):\n' +
+        topVenues.map(v => {
+          // Also pull any saved notes for this venue
+          const localItem = DATA.find(d => d.name.toLowerCase().trim() === v.name.toLowerCase().trim());
+          const noteStr = localItem?.notes ? ` | Notes: ${localItem.notes.trim()}` : '';
+          const atNoteStr = v.notes && v.notes.trim() !== 'Out' ? ` | System: ${v.notes.trim()}` : '';
+          return `- "${v.name}" | ${v.neighborhood} | ${v.pastEvents} shows | avg ${Math.round(v.avgTickets)} tickets | avg $${Math.round(v.avgRevenue)} rev | ${Math.round((v.avgTickets/(v.capacity||100))*100)}% avg fill${noteStr}${atNoteStr}`;
+        }).join('\n');
+    }
+    const topHoods = Object.values(AT_HOODS)
+      .filter(h => h.shows >= 2)
+      .sort((a,b) => b.avgSellThru - a.avgSellThru)
+      .slice(0, 10);
+    if (topHoods.length) {
+      venuePerf += '\n\nLA NEIGHBORHOOD PERFORMANCE:\n' +
+        topHoods.map(h => `- ${h.name}: ${Math.round(h.avgSellThru*100)}% avg fill | ${h.avgTixSold} avg tickets | ${h.shows} shows`).join('\n');
     }
   }
-  results.innerHTML = html;
-  if (anySuccess) { await loadAllData(); renderAll(); showToast('Sheets synced'); }
+
+  // ── TODAY'S DATE ──
+  const todayStr = today.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+
+  return `You are a smart operations assistant for Sofar Sounds LA — an intimate live music company producing shows for 50–100 guests in unique, secret-location venues across Los Angeles.
+
+Answer clearly and directly. Be specific with names, dates, numbers. Keep responses concise and actionable. When recommending venues, pick the 2–3 best fits and explain why. Use performance data to back up recommendations. If data is missing for something, say so rather than guessing.
+
+TODAY: ${todayStr}
+
+UPCOMING SHOWS (next 90 days):
+${showList}
+
+PIPELINE VENUES (not yet booked):
+${venueList}
+${notesContext}
+
+KEY CONTEXT:
+- Show types: Partnership (revenue anchor, high-stakes logistics), Artist-Hosted (artist drives audience, typically Wed/Thu, 50–75 cap), Regular Discovery (Sofar-driven audience, Fri/Sat, 75–100+ cap)
+- LA audiences don't travel broadly — Eastside, Westside, and Central LA are distinct ecosystems. Pasadena is its own world. People rarely cross the 405 or go Downtown except Arts District.
+- Wednesday shows = Melrose Umbrella Co residency (Hollywood/WeHo). Do not double-book that night in same area.
+- Show leads: Ben (Westside), Lauren (multi-area), others as assigned
+- Artist-hosted shows need at least 2 of 3: exceptional/unique sound, existing following, headliner stage presence
+- For partnership shows: protect the partner relationship and guest experience above all else
+${venuePerf}`;
 }
 
-async function autoSyncOnLoad() {
-  const urls = getSyncUrls();
-  if (!urls.calendar && !urls.venue && !urls.artist) return;
-  setSyncState('syncing', 'Syncing sheets...');
-  const tasks = [
-    { table:'2026_calendar', url:urls.calendar },
-    { table:'venue_list',    url:urls.venue },
-    { table:'artist_hosted', url:urls.artist },
-  ].filter(t => t.url);
-  let synced = 0;
-  for (const task of tasks) {
-    try {
-      const res = await fetch(task.url);
-      if (!res.ok) continue;
-      const text = await res.text();
-      const rows = parseCSV(text);
-      if (rows.length < 2) continue;
-      const fields = getFields(task.table);
-      const headers = rows[0];
-      const cmap = autoMap(headers, fields);
-      const get = (row, key) => cmap[key]>=0 ? (row[cmap[key]]||'').trim() : '';
-      const records = rows.slice(1).filter(r=>r.some(c=>c)).map(row => {
-        const rec = {};
-        fields.forEach(f => { const v = get(row, f.key); if (v) rec[f.key] = v; });
-        return rec;
-      }).filter(r => Object.keys(r).length > 0);
-      if (records.length) { await sb.from(task.table).upsert(records, {ignoreDuplicates:false}); synced += records.length; }
-    } catch(e) { console.warn('Auto-sync error:', e); }
+function updateChatSidebar() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const horizon = new Date(today); horizon.setDate(today.getDate()+90);
+
+  const upcoming = DATA
+    .filter(d => d.rawDate && d.date !== '–' && d.type !== 'pipeline' && d.type !== 'hosted')
+    .map(d => ({ ...d, _dt: new Date(d.rawDate) }))
+    .filter(d => !isNaN(d._dt) && d._dt >= today && d._dt <= horizon)
+    .sort((a,b) => a._dt - b._dt);
+
+  const venues = DATA.filter(d => d.type === 'pipeline');
+  document.getElementById('cs-show-count').textContent = upcoming.length || '–';
+  document.getElementById('cs-venue-count').textContent = venues.length || '–';
+
+  if (upcoming.length === 0) {
+    document.getElementById('cs-body').innerHTML =
+      '<div class="cs-label" style="padding-top:4px;color:var(--muted)">No upcoming shows loaded.<br>Check Supabase sync.</div>';
+    return;
   }
-  if (synced > 0) showToast(`Auto-synced ${synced} rows from Sheets`);
-}
 
-// ═══════════════════════════════════════════════════
-// EXPORT
-// ═══════════════════════════════════════════════════
-function exportCSV() {
-  const data = getFiltered();
-  const headers = ['Type','Name','Neighborhood','Area','Date','Day','Capacity','Format','Status','Artist','Lead','Lat','Lng','Notes'];
-  const rows = data.map(d => [
-    getLabel(d.type), `"${d.name}"`, `"${d.neighborhood}"`, `"${d.area}"`,
-    d.date, d.day, d.cap, `"${d.format}"`, `"${d.status}"`,
-    `"${d.artist||''}"`, `"${d.lead||''}"`, d.rawLat||'', d.rawLng||'',
-    `"${(d.notes||'').replace(/"/g,'""')}"`
-  ].join(','));
-  const blob = new Blob([[headers.join(','),...rows].join('\n')], {type:'text/csv'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `sofar-la-${currentMonth}.csv`; a.click();
-  URL.revokeObjectURL(a.href);
-  showToast('CSV exported');
-}
-
-function exportNotes() {
-  const items = DATA.filter(d => d.notes && d.notes.trim());
-  if (!items.length) { showToast('No notes to export yet', true); return; }
-  const sorted = [...items].sort((a,b)=>a.date.localeCompare(b.date));
-  const dateStr = new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
-  const rows = sorted.map(item => {
-    const color = getColor(item.type);
-    return `<tr>
-      <td style="padding:10px 14px;border-bottom:1px solid #eee;white-space:nowrap;font-weight:600">${item.date!=='–'?item.date:'–'}</td>
-      <td style="padding:10px 14px;border-bottom:1px solid #eee;font-weight:600">${item.name}</td>
-      <td style="padding:10px 14px;border-bottom:1px solid #eee"><span style="background:${color}18;color:${color};padding:2px 7px;border-radius:3px;font-size:11px;font-weight:600">${getLabel(item.type)}</span></td>
-      <td style="padding:10px 14px;border-bottom:1px solid #eee;color:#666">${item.area||item.neighborhood}</td>
-      <td style="padding:10px 14px;border-bottom:1px solid #eee;color:#333;line-height:1.6">${item.notes}</td>
-    </tr>`;
+  // Group by month label
+  let lastMonth = '';
+  const rows = upcoming.map(s => {
+    const mo = s._dt.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    const header = mo !== lastMonth ? `<div class="cs-label" style="padding-top:6px">${mo}</div>` : '';
+    lastMonth = mo;
+    const shortDate = s._dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    return header + `<div class="cs-show">
+      <div class="cs-show-date">${shortDate}</div>
+      <div class="cs-show-name">${s.name}</div>
+      <div class="cs-show-meta">${getLabel(s.type)} · ${s.area}${s.lead?' · '+s.lead:''}</div>
+    </div>`;
   }).join('');
-  const docHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-  <title>Sofar LA — Notes ${dateStr}</title>
-  <style>body{font-family:Georgia,serif;max-width:960px;margin:40px auto;padding:0 24px;color:#1a1a1a}h1{font-size:28px;font-weight:300;margin-bottom:4px}h1 em{font-style:italic;color:#C48820}.sub{font-size:12px;color:#999;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:32px}table{width:100%;border-collapse:collapse;font-size:13px}th{background:#f5f3ee;padding:10px 14px;text-align:left;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#666;border-bottom:2px solid #ddd}</style>
-  </head><body>
-  <h1>Sofar <em>LA</em></h1>
-  <div class="sub">Notes Export · ${dateStr} · ${items.length} items</div>
-  <table><thead><tr><th>Date</th><th>Venue / Show</th><th>Type</th><th>Area</th><th>Notes</th></tr></thead>
-  <tbody>${rows}</tbody></table></body></html>`;
-  const blob = new Blob([docHtml], {type:'text/html'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `sofar-la-notes-${new Date().toISOString().split('T')[0]}.html`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-  showToast(`Exported ${items.length} notes`);
+  document.getElementById('cs-body').innerHTML = rows;
 }
 
-// ═══════════════════════════════════════════════════
+function sendChip(el) {
+  document.getElementById('chat-input').value=el.textContent.trim();
+  sendChat();
+}
+function handleChatKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();} }
+function autoResizeChat(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; }
+
+async function sendChat() {
+  const input=document.getElementById('chat-input');
+  const text=input.value.trim();
+  if(!text||chatLoading) return;
+  document.getElementById('chat-empty').style.display='none';
+  chatMessages.push({role:'user',content:text});
+  appendChatMsg('user',text);
+  input.value=''; input.style.height='auto';
+  const typing=appendTyping();
+  chatLoading=true; document.getElementById('send-btn').disabled=true;
+  try {
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:1000,
+        system:buildSystemPrompt(),
+        messages:chatMessages,
+      })
+    });
+    const data=await res.json();
+    typing.remove();
+    const reply=data.content?.[0]?.text||'Something went wrong.';
+    chatMessages.push({role:'assistant',content:reply});
+    appendChatMsg('ai',reply);
+  } catch(e) {
+    typing.remove();
+    appendChatMsg('ai','Connection error — check that you\'re on the deployed app.');
+  }
+  chatLoading=false; document.getElementById('send-btn').disabled=false;
+}
+
+function appendChatMsg(role,text) {
+  const container=document.getElementById('chat-messages');
+  const div=document.createElement('div');
+  div.className=`msg ${role}`;
+  div.innerHTML=`<div class="msg-av">${role==='ai'?'S':'B'}</div><div class="msg-bub">${fmtChat(text)}</div>`;
+  container.appendChild(div);
+  container.scrollTop=container.scrollHeight;
+}
+function appendTyping() {
+  const container=document.getElementById('chat-messages');
+  const div=document.createElement('div');
+  div.className='msg ai';
+  div.innerHTML=`<div class="msg-av">S</div><div class="msg-bub"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  container.appendChild(div);
+  container.scrollTop=container.scrollHeight;
+  return div;
+}
+function fmtChat(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/^- (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>.*?<\/li>\n?)+/gs,m=>`<ul>${m}</ul>`)
+    .replace(/\n\n/g,'</p><p style="margin-top:8px">')
+    .replace(/\n/g,'<br>');
+}
+
+// ══════════════════════════════════════════
 // UTILS
-// ═══════════════════════════════════════════════════
-function setSyncState(state, label) {
-  const dot = document.getElementById('sdot');
-  const lbl = document.getElementById('sync-label');
-  dot.className = 'sdot' + (state==='syncing'?' syncing':state==='error'?' error':'');
-  lbl.textContent = label;
+// ══════════════════════════════════════════
+function setSyncState(state) {
+  const dot=document.getElementById('sync-dot');
+  dot.className=state==='syncing'?'syncing':'';
+}
+function showToast(msg,isErr) {
+  const t=document.getElementById('toast');
+  t.textContent=(isErr?'✗ ':'✓ ')+msg;
+  t.className='show'+(isErr?' err':'');
+  clearTimeout(t._t);
+  t._t=setTimeout(()=>t.className='',2500);
+}
+function openImportSimple() {
+  showToast('Import panel — coming soon in full build');
 }
 
-function showToast(msg, isError) {
-  const t = document.getElementById('toast');
-  t.textContent = (isError?'✗ ':'✓ ') + msg;
-  t.className = 'show' + (isError?' error':'');
-  clearTimeout(t._timer);
-  t._timer = setTimeout(()=>t.className='', 2500);
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape') closeDetail();
+});
+
+// ══════════════════════════════════════════
+// AIRTABLE SYNC
+// ══════════════════════════════════════════
+
+async function fetchAllAirtablePages(table, fields, filter) {
+  let records = [], offset = null;
+  const fieldParams = fields.map(f => `fields[]=${encodeURIComponent(f)}`).join('&');
+  const filterParam = filter ? `&filterByFormula=${encodeURIComponent(filter)}` : '';
+  do {
+    const offsetParam = offset ? `&offset=${offset}` : '';
+    const url = `https://api.airtable.com/v0/${AT_BASE}/${encodeURIComponent(table)}?${fieldParams}${filterParam}${offsetParam}`;
+    const res = await fetch(url, { headers: AT_HEADERS });
+    const data = await res.json();
+    if (data.error) { console.warn('Airtable error:', data.error); break; }
+    records = records.concat(data.records || []);
+    offset = data.offset || null;
+  } while (offset);
+  return records;
 }
 
-function openImport() {
-  parsedRows=[]; parsedHeaders=[];
-  document.getElementById('paste-input').value='';
-  document.getElementById('paste-preview').style.display='none';
-  document.getElementById('upload-preview').style.display='none';
-  document.getElementById('dz-text').innerHTML='Drop CSV here or click to browse<br><span style="color:var(--faint)">Sheets → File → Download → CSV</span>';
-  const urls = getSyncUrls();
-  if (document.getElementById('sync-cal-url')) document.getElementById('sync-cal-url').value=urls.calendar||'';
-  if (document.getElementById('sync-venue-url')) document.getElementById('sync-venue-url').value=urls.venue||'';
-  if (document.getElementById('sync-artist-url')) document.getElementById('sync-artist-url').value=urls.artist||'';
-  document.getElementById('sync-results').style.display='none';
-  document.getElementById('import-confirm-btn').style.display='';
-  openModal('import-modal');
+async function loadAirtableData() {
+  if (atLoaded) return;
+  showToast('Loading historical data...');
+  try {
+    // Fetch all LA events
+    const eventFields = ['Show Date','Venue Name','Neighborhood','Tickets Sold','Tickets Available',
+      '% Sell Thru ','USD Revenue','DOW','Lineup','Crew Lead','Show Type (Diversification)',
+      'Avg Sell Thru of Neighborhood','Avg Tix Sold of Neighborhood'];
+    const rawEvents = await fetchAllAirtablePages('Events', eventFields, '{City}="la"');
+    AT_EVENTS = rawEvents.map(r => r.fields).filter(f => f['Show Date'] && f['Venue Name']);
+
+    // Fetch all LA venues
+    const venueFields = ['Venue Name','Neighborhood','Capacity','Past Events','Avg Tickets Sold',
+      'Avg Show Revenue','Venue % Excellent Ratings (Guest)','Last Event','Booking Notes (Venue)'];
+    const rawVenues = await fetchAllAirtablePages('Venues', venueFields, '{City}="Los Angeles"');
+
+    // Build venue lookup keyed by name
+    rawVenues.forEach(r => {
+      const f = r.fields;
+      const name = f['Venue Name'];
+      if (!name) return;
+      AT_VENUES[name.toLowerCase().trim()] = {
+        name,
+        neighborhood: f['Neighborhood'] || '–',
+        capacity: f['Capacity'] || 0,
+        pastEvents: f['Past Events'] || 0,
+        avgTickets: f['Avg Tickets Sold'] || 0,
+        avgRevenue: f['Avg Show Revenue'] || 0,
+        excellentRating: f['Venue % Excellent Ratings (Guest)'] || 0,
+        lastEvent: f['Last Event'] || null,
+        notes: f['Booking Notes (Venue)'] || '',
+      };
+    });
+
+    // Aggregate neighborhood stats from events
+    const hoodMap = {};
+    AT_EVENTS.forEach(e => {
+      const hood = e['Neighborhood'];
+      if (!hood) return;
+      if (!hoodMap[hood]) hoodMap[hood] = { sellThrus: [], tixSold: [], shows: 0 };
+      const st = e['% Sell Thru '];
+      const ts = e['Tickets Sold'];
+      if (typeof st === 'number' && !isNaN(st)) hoodMap[hood].sellThrus.push(st);
+      if (typeof ts === 'number' && !isNaN(ts)) hoodMap[hood].tixSold.push(ts);
+      hoodMap[hood].shows++;
+    });
+    Object.entries(hoodMap).forEach(([hood, data]) => {
+      const avgST = data.sellThrus.length ? data.sellThrus.reduce((a,b)=>a+b,0)/data.sellThrus.length : 0;
+      const avgTix = data.tixSold.length ? data.tixSold.reduce((a,b)=>a+b,0)/data.tixSold.length : 0;
+      AT_HOODS[hood.toLowerCase().trim()] = {
+        name: hood, avgSellThru: avgST, avgTixSold: Math.round(avgTix), shows: data.shows
+      };
+    });
+
+    atLoaded = true;
+    showToast(`Loaded ${AT_EVENTS.length} shows + ${rawVenues.length} venues from Airtable`);
+  } catch(e) {
+    console.error('Airtable load failed:', e);
+    showToast('Airtable load failed — using cached data', true);
+  }
 }
 
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function getVenueStats(venueName) {
+  if (!venueName) return null;
+  return AT_VENUES[venueName.toLowerCase().trim()] || null;
+}
 
-function switchTab(tab) {
-  importActive = tab;
-  document.querySelectorAll('.itab').forEach((t,i)=>t.classList.toggle('active',['paste','upload','sync'][i]===tab));
-  document.querySelectorAll('.itab-panel').forEach(p=>p.classList.remove('active'));
-  document.getElementById('tab-'+tab).classList.add('active');
-  document.getElementById('import-confirm-btn').style.display = tab==='sync' ? 'none' : '';
+function getVenueHistory(venueName) {
+  if (!venueName) return [];
+  const name = venueName.toLowerCase().trim();
+  return AT_EVENTS
+    .filter(e => e['Venue Name'] && e['Venue Name'].toLowerCase().trim() === name)
+    .sort((a,b) => new Date(b['Show Date']) - new Date(a['Show Date']))
+    .slice(0, 6);
+}
+
+function getNeighborhoodStats(neighborhood) {
+  if (!neighborhood) return null;
+  return AT_HOODS[neighborhood.toLowerCase().trim()] || null;
+}
+
+function renderWeekDetailWithAirtable(show) {
+  const color = getColor(show.type);
+  const stats = getVenueStats(show.venue);
+  const history = getVenueHistory(show.venue);
+
+  // Find nearby neighborhoods from events
+  const areaHoods = Object.values(AT_HOODS)
+    .filter(h => h.shows >= 2)
+    .sort((a,b) => b.avgSellThru - a.avgSellThru)
+    .slice(0, 4);
+
+  // Stats row
+  const avgFill = stats ? Math.round(stats.avgTickets / (stats.capacity || 100) * 100) : null;
+  const statsHtml = `
+    <div class="wdp-stats">
+      <div class="wdp-stat">
+        <div class="wdps-val" style="color:${avgFill>=70?'var(--teal)':avgFill>=50?'var(--amber)':'var(--coral)'}">${avgFill!==null?avgFill+'%':'–'}</div>
+        <div class="wdps-lbl">Avg fill<br>rate</div>
+      </div>
+      <div class="wdp-stat">
+        <div class="wdps-val" style="color:var(--text)">${stats?stats.pastEvents:'–'}</div>
+        <div class="wdps-lbl">Total shows<br>hosted</div>
+      </div>
+      <div class="wdp-stat">
+        <div class="wdps-val" style="color:var(--amber)">${stats?'$'+Math.round(stats.avgRevenue):'–'}</div>
+        <div class="wdps-lbl">Avg show<br>revenue</div>
+      </div>
+    </div>`;
+
+  // History rows
+  const histHtml = history.length ? history.map(e => {
+    const pct = e['% Sell Thru '];
+    const pctVal = typeof pct === 'number' ? Math.round(pct * 100) : null;
+    const fillColor = pctVal >= 70 ? 'var(--teal)' : pctVal >= 50 ? 'var(--amber)' : 'var(--coral)';
+    const d = new Date(e['Show Date']);
+    const dateStr = d.toLocaleDateString('en-US',{month:'short',year:'2-digit'});
+    return `<div class="hist-row">
+      <div class="hr-date">${dateStr}</div>
+      <div><div class="hr-show">${e['Show Type (Diversification)']||'Show'}</div>
+      <div class="hr-artist">${e['Lineup']||''} ${e['Crew Lead']?'· Lead: '+e['Crew Lead'].trim():''}</div></div>
+      <div class="hr-fill">
+        <div class="hr-pct" style="color:${fillColor}">${pctVal!==null?pctVal+'%':'–'}</div>
+        <div class="hr-bar"><div class="hr-fill-bar" style="width:${pctVal||0}%;background:${fillColor}"></div></div>
+      </div></div>`;
+  }).join('') : '<div style="font-size:11px;color:var(--muted);padding:8px 0">No history in Airtable yet for this venue.</div>';
+
+  // Neighborhood grid
+  const hoodHtml = areaHoods.map(h => {
+    const pct = Math.round(h.avgSellThru * 100);
+    const hColor = pct >= 70 ? 'var(--teal)' : pct >= 50 ? 'var(--amber)' : 'var(--coral)';
+    return `<div class="hood-card">
+      <div class="hood-name">${h.name}</div>
+      <div class="hood-bar-wrap"><div class="hood-bar"><div class="hood-bar-inner" style="width:${pct}%;background:${hColor}"></div></div><div class="hood-pct">${pct}%</div></div>
+      <div class="hood-shows">${h.shows} shows · avg ${h.avgTixSold} tickets</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('week-detail').innerHTML = `
+    <div class="wdp-top">
+      <div class="wdp-eyebrow" style="color:${color}">${getLabel(show.type)}</div>
+      <div class="wdp-name">${show.venue}</div>
+      <div class="wdp-loc">${show.area}${show.cap?' · '+show.cap+' cap':''}${show.lead?' · Lead: '+show.lead:''}</div>
+      ${statsHtml}
+    </div>
+    <div class="wdp-section">
+      <div class="wdp-sec-title">Show History ${history.length?'('+history.length+' shows)':'· from Airtable'}</div>
+      ${histHtml}
+    </div>
+    ${areaHoods.length ? `<div class="wdp-section">
+      <div class="wdp-sec-title">LA Neighborhood Performance</div>
+      <div class="hood-grid">${hoodHtml}</div>
+    </div>` : ''}
+    <div class="wdp-notes">
+      <div class="wdp-sec-title">Notes</div>
+      <textarea class="notes-ta" placeholder="Add notes...">${show.notes||stats?.notes||''}</textarea>
+      <div class="wdp-action-row">
+        <div class="wdp-btn">Open in Maps</div>
+        <div class="wdp-btn primary">Save Notes</div>
+      </div>
+    </div>`;
+}
+
+// ══════════════════════════════════════════
+// NOTES PANEL ENHANCEMENTS
+// ══════════════════════════════════════════
+
+// Char counter for notes textarea
+document.getElementById('dp-notes').addEventListener('input', function() {
+  document.getElementById('dp-notes-char').textContent = this.value.length;
+});
+
+// Show Airtable system notes in detail panel when item is selected
+function showAtNotesInPanel(venueName) {
+  const stats = getVenueStats(venueName);
+  const block = document.getElementById('dp-at-notes-block');
+  const text = document.getElementById('dp-at-notes-text');
+  if (stats && stats.notes && stats.notes.trim() && stats.notes.trim() !== 'Out') {
+    block.style.display = 'block';
+    text.textContent = stats.notes.trim();
+  } else {
+    block.style.display = 'none';
+  }
+}
+
+// Patch selectMapItem to also show AT notes
+const _origSelectMapItem = selectMapItem;
+selectMapItem = function(id) {
+  _origSelectMapItem(id);
+  const item = DATA.find(i => i.id === id);
+  if (item) showAtNotesInPanel(item.name);
+};
+
+// ── BROWSE MODE ──
+let browseList = [];
+let browseIdx = 0;
+
+function openBrowse() {
+  // Build list: all pipeline venues + confirmed shows with unique venue names
+  const seen = new Set();
+  browseList = [];
+  DATA.forEach(item => {
+    const key = item.name.toLowerCase().trim();
+    if (!seen.has(key)) {
+      seen.add(key);
+      browseList.push(item);
+    }
+  });
+  browseList.sort((a,b) => a.name.localeCompare(b.name));
+  browseIdx = 0;
+  renderBrowse();
+  document.getElementById('browse-overlay').classList.add('open');
+}
+
+function closeBrowse() {
+  document.getElementById('browse-overlay').classList.remove('open');
+}
+
+function renderBrowse() {
+  if (!browseList.length) return;
+  const item = browseList[browseIdx];
+  const total = browseList.length;
+  const pct = Math.round(((browseIdx + 1) / total) * 100);
+
+  document.getElementById('bm-venue-name').textContent = item.name;
+  document.getElementById('bm-venue-meta').textContent =
+    [item.neighborhood, item.area, item.cap ? item.cap + ' cap' : null]
+    .filter(Boolean).join(' · ');
+  document.getElementById('bm-prog-fill').style.width = pct + '%';
+  document.getElementById('bm-prog-text').textContent = `${browseIdx + 1} / ${total}`;
+
+  // Airtable system notes
+  const stats = getVenueStats(item.name);
+  const atBlock = document.getElementById('bm-at-block');
+  if (stats && stats.notes && stats.notes.trim() && stats.notes.trim() !== 'Out') {
+    document.getElementById('bm-at-text').textContent = stats.notes.trim();
+    atBlock.style.display = 'block';
+  } else {
+    atBlock.style.display = 'none';
+  }
+
+  // Load existing saved notes
+  document.getElementById('bm-textarea').value = item.notes || '';
+}
+
+async function bmSave() {
+  const item = browseList[browseIdx];
+  const notes = document.getElementById('bm-textarea').value.trim();
+  if (notes !== (item.notes || '').trim()) {
+    const {error} = await sb.from(item.table).update({notes}).eq('id', item.db_id);
+    if (error) { showToast('Save failed', true); return; }
+    item.notes = notes;
+    showToast('Saved — ' + item.name);
+  }
+  browseNav(1);
+}
+
+function browseNav(dir) {
+  browseIdx = Math.max(0, Math.min(browseList.length - 1, browseIdx + dir));
+  renderBrowse();
 }
 
 document.addEventListener('keydown', e => {
-  if (e.key==='Escape') { closeModal('import-modal'); closeDetail(); }
-});
-document.querySelectorAll('.modal-overlay').forEach(o => {
-  o.addEventListener('click', e => { if (e.target===o) o.classList.remove('open'); });
+  if (e.key === 'Escape') { closeBrowse(); closeDetail(); }
 });
 
-boot();
+// ── BOOT ──
+loadMap();
+renderWeek();
+loadAirtableData();
 </script>
+<!-- Browse Notes Modal -->
+<div id="browse-overlay" onclick="if(event.target===this)closeBrowse()">
+  <div id="browse-modal">
+    <div class="bm-head">
+      <div class="bm-title">Venue <em>Notes</em></div>
+      <button class="bm-close" onclick="closeBrowse()">×</button>
+    </div>
+    <div class="bm-progress">
+      <div class="bm-prog-bar"><div class="bm-prog-fill" id="bm-prog-fill" style="width:0%"></div></div>
+      <div class="bm-prog-text" id="bm-prog-text">0 / 0</div>
+    </div>
+    <div class="bm-body">
+      <div class="bm-venue-name" id="bm-venue-name">–</div>
+      <div class="bm-venue-meta" id="bm-venue-meta"></div>
+      <div id="bm-at-block" style="display:none">
+        <div class="bm-at-notes">
+          <div class="bm-at-label">⬡ Sofar system notes</div>
+          <div id="bm-at-text"></div>
+        </div>
+      </div>
+      <div class="bm-prompt">Logistics · Host contact / ease · Load-in notes · Audience fit · Book again?</div>
+      <textarea class="bm-textarea" id="bm-textarea" placeholder="e.g. Crew needs 30 min early for furniture setup. Host is slow to respond day-of. Great natural light. Strong Eastside crowd fit..."></textarea>
+    </div>
+    <div class="bm-foot">
+      <button class="bm-btn" onclick="browseNav(-1)">‹ Prev</button>
+      <button class="bm-btn primary" onclick="bmSave()">Save &amp; Next ›</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
