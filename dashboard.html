@@ -9,7 +9,8 @@
     :root {
       --bg:#F5F3EE;--surface:#FFFFFF;--surface2:#F0EDE6;--surface3:#E8E3D8;
       --border:#E0DCD2;--border2:#C8C4BA;--text:#1A1814;--muted:#8A8278;
-      --faint:#C8C4BA;--amber:#C48820;--teal:#2A9F84;--coral:#C84A28;--green:#5A9840;
+      --faint:#C8C4BA;--amber:#C48820;--teal:#2A9F84;--coral:#C84A28;
+      --green:#5A9840;--green-light:#EBF4E6;--amber-light:#FFF8E8;
       --header-h:48px;
     }
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -30,15 +31,30 @@
     .token-input{width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:4px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none;transition:border-color .15s}
     .token-input:focus{border-color:var(--text)}
     .connect-error{font-size:12px;color:var(--coral);margin-top:8px;display:none}
-    .main{max-width:1060px;margin:0 auto;padding:28px 24px 48px}
-    .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:20px}
+    .main{max-width:1100px;margin:0 auto;padding:28px 24px 48px}
+    .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px}
     .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px 18px}
     .kpi-label{font-size:11px;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px}
     .kpi-value{font-size:26px;font-weight:500;line-height:1;color:var(--text)}
-    .progress-section{margin-bottom:20px}
-    .progress-header{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:7px}
-    .progress-track{height:3px;background:var(--border);border-radius:99px;overflow:hidden}
-    .progress-fill{height:100%;background:var(--teal);border-radius:99px;transition:width .5s ease}
+
+    /* ── Progress bar ── */
+    .progress-section{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:18px 20px;margin-bottom:20px}
+    .progress-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
+    .progress-title{font-size:12px;color:var(--muted);letter-spacing:.07em;text-transform:uppercase}
+    .progress-revenue{font-size:18px;font-weight:500;color:var(--text)}
+    .progress-revenue span{font-size:12px;color:var(--muted);font-weight:300}
+
+    .bar-container{position:relative;height:10px;margin-bottom:22px}
+    .bar-track{position:absolute;inset:0;background:var(--surface3);border-radius:99px;overflow:hidden}
+    .bar-bonus-zone{position:absolute;top:0;bottom:0;background:var(--green-light);border-radius:0 99px 99px 0}
+    .bar-fill-pre{position:absolute;top:0;bottom:0;left:0;background:var(--amber);border-radius:99px 0 0 99px;transition:width .5s ease}
+    .bar-fill-post{position:absolute;top:0;bottom:0;background:var(--teal);border-radius:0 99px 99px 0;transition:width .5s ease,left .5s ease}
+    .bar-goal-line{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--text);border-radius:1px}
+    .bar-tick{position:absolute;top:14px;transform:translateX(-50%);font-size:10px;color:var(--muted);white-space:nowrap}
+    .bar-tick.goal-tick{color:var(--text);font-weight:500}
+    .bar-tick.bonus-label{color:var(--teal)}
+
+    /* ── Toolbar ── */
     .toolbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
     .seg{display:flex;border:1px solid var(--border2);border-radius:4px;overflow:hidden}
     .seg-btn{font-family:inherit;font-size:12px;padding:5px 12px;border:none;background:none;color:var(--muted);cursor:pointer}
@@ -46,26 +62,57 @@
     .month-input{font-family:inherit;font-size:12px;padding:5px 10px;border:1px solid var(--border2);border-radius:4px;background:var(--bg);color:var(--text);outline:none}
     .spacer{flex:1}
     .count-label{font-size:12px;color:var(--muted)}
+
+    /* ── Table ── */
     .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow-x:auto}
     table{width:100%;border-collapse:collapse}
     thead th{padding:10px 14px;font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
     thead th.r{text-align:right}
-    tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
-    tbody tr:last-child{border-bottom:none}
-    tbody tr:hover{background:var(--surface2)}
-    td{padding:10px 14px;font-size:13px}
+    tbody tr{transition:background .1s}
+    tbody tr:hover{filter:brightness(.97)}
+
+    /* Week header rows */
+    tr.week-hdr td{
+      padding:7px 14px;
+      font-size:11px;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      font-weight:500;
+      border-top:2px solid var(--border2);
+      border-bottom:1px solid var(--border);
+    }
+    tr.week-hdr:first-child td{border-top:none}
+
+    /* Week bands - alternate surface/surface2 */
+    tr.week-even{background:var(--surface)}
+    tr.week-odd{background:var(--surface2)}
+    tr.week-even:hover{background:#F5F3EE}
+    tr.week-odd:hover{background:#E8E5DF}
+
+    /* Bottom border on last row of each week */
+    tr.week-last td{border-bottom:1px solid var(--border2)}
+
+    td{padding:9px 14px;font-size:13px;border-bottom:1px solid var(--border)}
     td.r{text-align:right}
-    td.dim{color:var(--muted);font-size:12px}
-    .fill-bar{display:inline-flex;align-items:center;gap:8px;width:100%;justify-content:flex-end}
-    .fill-track{width:44px;height:3px;background:var(--border);border-radius:99px;overflow:hidden;flex-shrink:0}
-    .fill-inner{height:100%;border-radius:99px}
-    tfoot td{padding:10px 14px;font-size:12px;font-weight:500;background:var(--surface2);border-top:1px solid var(--border)}
+
+    /* Date cell */
+    .date-cell{line-height:1.3}
+    .date-dow{font-size:13px;font-weight:500;color:var(--text);text-transform:uppercase;letter-spacing:.05em}
+    .date-day{font-size:11px;color:var(--muted)}
+
+    /* Viability badge */
+    .badge{display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;letter-spacing:.04em;white-space:nowrap}
+    .badge-runs{background:#E6F4EC;color:#2A7A46}
+    .badge-risk{background:#FDE8E8;color:var(--coral)}
+    .badge-na{background:var(--surface3);color:var(--muted)}
+
+    tfoot td{padding:10px 14px;font-size:12px;font-weight:500;background:var(--surface2);border-top:2px solid var(--border2)}
     tfoot td.r{text-align:right}
-    .empty-row td{padding:40px;text-align:center;color:var(--muted)}
-    .page-footer{margin-top:14px;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--faint);flex-wrap:wrap;gap:6px}
+    .empty-row td{padding:40px;text-align:center;color:var(--muted);border:none}
+    .page-footer{margin-top:14px;display:flex;justify-content:space-between;font-size:11px;color:var(--faint);flex-wrap:wrap;gap:6px}
     @keyframes spin{to{transform:rotate(360deg)}}
     .spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--border2);border-top-color:var(--text);border-radius:50%;animation:spin .65s linear infinite;vertical-align:-2px;margin-right:6px}
-    @media(max-width:600px){.main{padding:16px 14px 32px}.header{padding:0 14px}.kpi-value{font-size:20px}}
+    @media(max-width:640px){.main{padding:16px 12px 32px}.header{padding:0 14px}.kpi-value{font-size:20px}.bar-tick{font-size:9px}}
   </style>
 </head>
 <body>
@@ -91,15 +138,7 @@
 
 <div id="dashboard-view" class="main" style="display:none">
   <div class="kpi-grid" id="kpi-grid"></div>
-  <div class="progress-section" id="progress-section">
-    <div class="progress-header">
-      <span>Revenue vs goal</span>
-      <span id="progress-label"></span>
-    </div>
-    <div class="progress-track">
-      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
-    </div>
-  </div>
+  <div class="progress-section" id="progress-section"></div>
   <div class="toolbar">
     <div class="seg">
       <button class="seg-btn active" id="seg-month" onclick="setView('month')">Month</button>
@@ -113,10 +152,11 @@
     <table>
       <thead>
         <tr>
-          <th>Date</th>
+          <th style="width:90px">Date</th>
           <th>Venue</th>
-          <th class="r">Tickets sold</th>
-          <th class="r">Fill</th>
+          <th class="r">Sold</th>
+          <th class="r">Cap</th>
+          <th class="r" title="Show runs at 30+ tickets sold">Status<br><span style="font-size:10px;letter-spacing:0;text-transform:none;font-weight:300">(runs ≥ 30)</span></th>
           <th class="r">Revenue</th>
         </tr>
       </thead>
@@ -134,18 +174,12 @@
   const PROXY='/.netlify/functions/airtable-proxy';
   const BASE='appFjmrBPpOKVSdpz';
   const TABLE='Events';
-  const GOAL=26775;
+  const MONTHLY_GOAL=26775;
+  const WEEKLY_GOAL=6694;
+  const BAR_MAX=50000;
+  const MIN_RUN=30;
   const TOKEN_KEY='sofar_at_token';
-
-  const F={
-    date:'Show Date',
-    city:'City',
-    venue:'Venue Name',
-    tickets:'Tickets Sold',
-    cap:'Tickets Available',
-    revenue:'USD Revenue'
-  };
-
+  const F={date:'Show Date',city:'City',venue:'Venue Name',tickets:'Tickets Sold',cap:'Tickets Available',revenue:'USD Revenue'};
   let S={records:[],view:'month',month:'2026-06',fetchedAt:null};
 
   function buildFormula(){
@@ -153,8 +187,7 @@
     if(S.view==='all')return city;
     const[yr,mo]=S.month.split('-').map(Number);
     const pad=n=>String(n).padStart(2,'0');
-    const prevEnd=new Date(yr,mo-1,0);
-    const nextStart=new Date(yr,mo,1);
+    const prevEnd=new Date(yr,mo-1,0),nextStart=new Date(yr,mo,1);
     const fmt=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
     return`AND(${city},IS_AFTER({${F.date}},'${fmt(prevEnd)}'),IS_BEFORE({${F.date}},'${fmt(nextStart)}'))`;
   }
@@ -176,30 +209,96 @@
     return all;
   }
 
-  function fmtDate(val){
-    if(!val)return'—';
-    try{const[y,m,d]=val.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});}
-    catch{return val;}
+  // ── Date helpers ──────────────────────────────────────────
+  function parseDate(str){
+    if(!str)return null;
+    const[y,m,d]=str.split('-').map(Number);
+    return new Date(y,m-1,d);
+  }
+  function fmtDow(str){
+    const d=parseDate(str);
+    if(!d)return'—';
+    return d.toLocaleDateString('en-US',{weekday:'short'}).toUpperCase();
+  }
+  function fmtShort(str){
+    const d=parseDate(str);
+    if(!d)return'';
+    return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  }
+  // Get Monday of the week for a date string
+  function getMondayKey(str){
+    const d=parseDate(str);
+    if(!d)return'';
+    const dow=d.getDay();
+    const offset=dow===0?-6:1-dow;
+    const mon=new Date(d);mon.setDate(d.getDate()+offset);
+    return mon.toISOString().slice(0,10);
+  }
+  function weekRangeLabel(monKey){
+    const mon=parseDate(monKey);
+    const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+    const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    return`${fmt(mon)} – ${fmt(sun)}`;
   }
 
-  function f$(n){return n?'$'+Math.round(n).toLocaleString():'—';}
+  function f$(n){return n!=null&&n!==''?'$'+Math.round(n).toLocaleString():'—';}
 
-  function fillColor(p){
-    if(p>=.9)return'var(--teal)';
-    if(p>=.7)return'var(--green)';
-    if(p>=.5)return'var(--amber)';
-    return'var(--coral)';
+  // ── Progress bar render ───────────────────────────────────
+  function renderProgress(totRev){
+    const goalFrac=MONTHLY_GOAL/BAR_MAX;    // 53.6%
+    const curFrac=Math.min(1,totRev/BAR_MAX);
+    const bonusStart=goalFrac*100;
+    const preWidth=Math.min(curFrac,goalFrac)/goalFrac*bonusStart;
+    const postLeft=bonusStart;
+    const postWidth=curFrac>goalFrac?(curFrac-goalFrac)/(1-goalFrac)*(100-bonusStart):0;
+    const hitGoal=totRev>=MONTHLY_GOAL;
+
+    const ticks=[
+      {val:WEEKLY_GOAL,label:'W1 · '+f$(WEEKLY_GOAL),goal:false},
+      {val:WEEKLY_GOAL*2,label:'W2 · '+f$(WEEKLY_GOAL*2),goal:false},
+      {val:WEEKLY_GOAL*3,label:'W3 · '+f$(WEEKLY_GOAL*3),goal:false},
+      {val:MONTHLY_GOAL,label:'GOAL',goal:true},
+    ];
+
+    const ticksHTML=ticks.map(t=>{
+      const pct=t.val/BAR_MAX*100;
+      const cls=t.goal?'bar-tick goal-tick':'bar-tick';
+      return`<div class="${cls}" style="left:${pct}%">${t.label}</div>
+             <div style="position:absolute;top:0;bottom:0;left:${pct}%;width:1px;background:${t.goal?'var(--border2)':'var(--border)'}"></div>`;
+    }).join('');
+
+    const bonusHTML=hitGoal
+      ?`<div class="bar-tick bonus-label" style="left:${bonusStart+(100-bonusStart)/2}%">BONUS ✦</div>`:'' ;
+
+    const sect=document.getElementById('progress-section');
+    sect.innerHTML=`
+      <div class="progress-top">
+        <span class="progress-title">Monthly revenue</span>
+        <span class="progress-revenue">${f$(totRev)} <span>/ ${f$(BAR_MAX)}</span></span>
+      </div>
+      <div class="bar-container">
+        <div class="bar-track"></div>
+        <div class="bar-bonus-zone" style="left:${bonusStart}%;right:0"></div>
+        <div class="bar-fill-pre" style="width:${preWidth}%"></div>
+        ${postWidth>0?`<div class="bar-fill-post" style="left:${postLeft}%;width:${postWidth}%"></div>`:''}
+        <div class="bar-goal-line" style="left:${bonusStart}%"></div>
+        ${ticksHTML}
+        ${bonusHTML}
+        <div style="position:absolute;bottom:-20px;left:0;font-size:10px;color:var(--faint)">$0</div>
+        <div style="position:absolute;bottom:-20px;right:0;font-size:10px;color:var(--faint)">$50k</div>
+      </div>`;
+    sect.style.display=S.view==='month'?'':'none';
   }
 
+  // ── Table render ──────────────────────────────────────────
   function render(){
     const{records,view,month,fetchedAt}=S;
     const sorted=[...records].sort((a,b)=>(a.fields[F.date]||'').localeCompare(b.fields[F.date]||''));
     const totTix=sorted.reduce((a,r)=>a+(Number(r.fields[F.tickets])||0),0);
     const totRev=sorted.reduce((a,r)=>a+(Number(r.fields[F.revenue])||0),0);
-    const totCap=sorted.reduce((a,r)=>a+(Number(r.fields[F.cap])||0),0);
-    const goalPct=Math.min(100,Math.round(totRev/GOAL*100));
     const avgRev=records.length?Math.round(totRev/records.length):0;
 
+    // KPI cards
     document.getElementById('kpi-grid').innerHTML=[
       {label:'Shows'+(view==='month'?` · ${month}`:'  · all LA'),value:records.length},
       {label:'Tickets sold',value:totTix.toLocaleString()},
@@ -207,46 +306,89 @@
       {label:'Avg per show',value:f$(avgRev)},
     ].map(k=>`<div class="kpi-card"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div></div>`).join('');
 
-    document.getElementById('progress-section').style.display=view==='month'?'':'none';
-    document.getElementById('progress-label').textContent=`${f$(totRev)} / ${f$(GOAL)}`;
-    document.getElementById('progress-fill').style.width=goalPct+'%';
+    renderProgress(totRev);
 
     document.getElementById('seg-month').className='seg-btn'+(view==='month'?' active':'');
     document.getElementById('seg-all').className='seg-btn'+(view==='all'?' active':'');
     document.getElementById('month-input').style.display=view==='month'?'':'none';
     document.getElementById('count-label').textContent=`${records.length} show${records.length!==1?'s':''}`;
 
-    if(sorted.length){
-      document.getElementById('tbl-body').innerHTML=sorted.map(r=>{
+    if(!sorted.length){
+      document.getElementById('tbl-body').innerHTML=`<tr class="empty-row"><td colspan="6">No shows found${view==='month'?' for '+month:''}</td></tr>`;
+      document.getElementById('tbl-foot').innerHTML='';
+      return;
+    }
+
+    // Group by week
+    const weekMap=new Map();
+    sorted.forEach(r=>{
+      const key=getMondayKey(r.fields[F.date]||'');
+      if(!weekMap.has(key))weekMap.set(key,[]);
+      weekMap.get(key).push(r);
+    });
+
+    const weekKeys=[...weekMap.keys()].sort();
+    let html='';
+    let totCap=0;
+
+    weekKeys.forEach((wk,wi)=>{
+      const rows=weekMap.get(wk);
+      const wkTix=rows.reduce((a,r)=>a+(Number(r.fields[F.tickets])||0),0);
+      const wkRev=rows.reduce((a,r)=>a+(Number(r.fields[F.revenue])||0),0);
+      const hitWeekly=wkRev>=WEEKLY_GOAL;
+      const wkBand=wi%2===0?'week-even':'week-odd';
+
+      // Week header row — color based on hitting weekly goal
+      const wkColor=view==='month'?(hitWeekly?'var(--teal)':'var(--amber)'):'var(--muted)';
+      const wkGoalStr=view==='month'?` · ${f$(wkRev)} ${hitWeekly?'✓':''} / $${WEEKLY_GOAL.toLocaleString()} goal`:`· ${f$(wkRev)}`;
+      html+=`<tr class="week-hdr ${wkBand}">
+        <td colspan="6" style="color:${wkColor}">
+          Week ${wi+1} · ${weekRangeLabel(wk)}${wkGoalStr}
+        </td>
+      </tr>`;
+
+      rows.forEach((r,ri)=>{
         const tix=Number(r.fields[F.tickets])||0;
         const cap=Number(r.fields[F.cap])||0;
         const rev=Number(r.fields[F.revenue])||0;
-        const pct=cap>0?tix/cap:0;
-        const pctLabel=cap>0?Math.round(pct*100)+'%':'—';
-        return`<tr>
-          <td class="dim">${fmtDate(r.fields[F.date])}</td>
+        const isLast=ri===rows.length-1;
+        totCap+=cap;
+
+        let badge;
+        if(tix===0&&rev===0){
+          badge=`<span class="badge badge-na">—</span>`;
+        }else if(tix>=MIN_RUN){
+          badge=`<span class="badge badge-runs">RUNS</span>`;
+        }else{
+          badge=`<span class="badge badge-risk">${tix} / cancel</span>`;
+        }
+
+        html+=`<tr class="${wkBand}${isLast?' week-last':''}">
+          <td><div class="date-cell"><div class="date-dow">${fmtDow(r.fields[F.date])}</div><div class="date-day">${fmtShort(r.fields[F.date])}</div></div></td>
           <td>${r.fields[F.venue]||'—'}</td>
           <td class="r">${tix>0?tix.toLocaleString():'—'}</td>
-          <td class="r"><div class="fill-bar"><span style="color:var(--muted);font-size:12px">${pctLabel}</span>${cap>0?`<div class="fill-track"><div class="fill-inner" style="width:${Math.round(pct*100)}%;background:${fillColor(pct)}"></div></div>`:''}</div></td>
+          <td class="r" style="color:var(--muted)">${cap>0?cap.toLocaleString():'—'}</td>
+          <td class="r">${badge}</td>
           <td class="r">${rev>0?f$(rev):'—'}</td>
         </tr>`;
-      }).join('');
-      document.getElementById('tbl-foot').innerHTML=`<tr>
-        <td>Total</td><td></td>
-        <td class="r">${totTix.toLocaleString()}</td>
-        <td class="r" style="color:var(--muted);font-size:12px">${totCap>0?Math.round(totTix/totCap*100)+'%':''}</td>
-        <td class="r">${f$(totRev)}</td>
-      </tr>`;
-    }else{
-      document.getElementById('tbl-body').innerHTML=`<tr class="empty-row"><td colspan="5">No shows found${view==='month'?' for '+month:''}</td></tr>`;
-      document.getElementById('tbl-foot').innerHTML='';
-    }
+      });
+    });
+
+    document.getElementById('tbl-body').innerHTML=html;
+    document.getElementById('tbl-foot').innerHTML=`<tr>
+      <td colspan="2">Total · ${records.length} shows</td>
+      <td class="r">${totTix.toLocaleString()}</td>
+      <td class="r" style="color:var(--muted)">${totCap>0?totCap.toLocaleString():'—'}</td>
+      <td class="r"></td>
+      <td class="r">${f$(totRev)}</td>
+    </tr>`;
 
     document.getElementById('footer-left').textContent=`Base: ${BASE} · Table: ${TABLE}`;
     document.getElementById('footer-right').textContent=fetchedAt?`Updated ${fetchedAt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`:'' ;
     document.getElementById('last-updated').textContent=fetchedAt?fetchedAt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'';
   }
 
+  // ── Actions ───────────────────────────────────────────────
   async function doConnect(){
     const input=document.getElementById('token-input');
     const token=input.value.trim();
@@ -258,16 +400,12 @@
     btn.disabled=true;
     localStorage.setItem(TOKEN_KEY,token);
     try{
-      S.records=await fetchAll();
-      S.fetchedAt=new Date();
-      showDashboard();
-      render();
+      S.records=await fetchAll();S.fetchedAt=new Date();
+      showDashboard();render();
     }catch(e){
       localStorage.removeItem(TOKEN_KEY);
-      errEl.textContent=e.message;
-      errEl.style.display='';
-      btn.innerHTML='Connect';
-      btn.disabled=false;
+      errEl.textContent=e.message;errEl.style.display='';
+      btn.innerHTML='Connect';btn.disabled=false;
     }
   }
 
@@ -304,7 +442,6 @@
   function setMonth(m){S.month=m;doRefresh();}
 
   document.getElementById('token-input').addEventListener('keydown',e=>{if(e.key==='Enter')doConnect();});
-
   window.addEventListener('load',()=>{
     const saved=localStorage.getItem(TOKEN_KEY);
     if(saved){document.getElementById('token-input').value=saved;doConnect();}
