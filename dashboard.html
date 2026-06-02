@@ -70,9 +70,11 @@
     thead th.r{text-align:right}
     tbody tr{transition:background .1s}
     tbody tr:hover{filter:brightness(.97)}
-    .del-btn{opacity:0;background:none;border:none;cursor:pointer;color:var(--faint);padding:2px 4px;font-size:14px;line-height:1;font-family:inherit;border-radius:3px;transition:opacity .15s,color .15s}
-    tr:hover .del-btn{opacity:1}
-    .del-btn:hover{color:var(--coral)}
+    .hide-btn{opacity:0;background:none;border:none;cursor:pointer;color:var(--faint);padding:2px 4px;font-size:14px;line-height:1;font-family:inherit;border-radius:3px;transition:opacity .15s,color .15s}
+    tr:hover .hide-btn{opacity:1}
+    .hide-btn:hover{color:var(--muted)}
+    tr.row-hidden{opacity:.35}
+    tr.row-hidden .hide-btn{opacity:1;color:var(--teal)}
 
     /* Week header rows */
     tr.week-hdr td{
@@ -149,6 +151,7 @@
     </div>
     <input type="month" class="month-input" id="month-input" value="2026-06" oninput="setMonth(this.value)">
     <div class="spacer"></div>
+    <button class="btn" id="hidden-toggle-btn" style="display:none;font-size:11px" onclick="toggleShowHidden()"></button>
     <span class="count-label" id="count-label"></span>
   </div>
   <div class="table-wrap">
@@ -183,8 +186,10 @@
   const BAR_MAX=50000;
   const MIN_RUN=30;
   const TOKEN_KEY='sofar_at_token';
+  const HIDDEN_KEY='sofar_hidden_ids';
   const F={date:'Show Date',city:'City',venue:'Venue Name',tickets:'Tickets Sold',cap:'Tickets Available',revenue:'USD Revenue'};
-  let S={records:[],view:'month',month:'2026-06',fetchedAt:null};
+  let S={records:[],view:'month',month:'2026-06',fetchedAt:null,showHidden:false};
+  let hiddenIds=new Set(JSON.parse(localStorage.getItem(HIDDEN_KEY)||'[]'));
 
   function buildFormula(){
     const city=`{${F.city}}="la"`;
@@ -299,13 +304,14 @@
   function render(){
     const{records,view,month,fetchedAt}=S;
     const sorted=[...records].sort((a,b)=>(a.fields[F.date]||'').localeCompare(b.fields[F.date]||''));
-    const totTix=sorted.reduce((a,r)=>a+(Number(r.fields[F.tickets])||0),0);
-    const totRev=sorted.reduce((a,r)=>a+(Number(r.fields[F.revenue])||0),0);
-    const avgRev=records.length?Math.round(totRev/records.length):0;
+    const visible=sorted.filter(r=>!hiddenIds.has(r.id));
+    const totTix=visible.reduce((a,r)=>a+(Number(r.fields[F.tickets])||0),0);
+    const totRev=visible.reduce((a,r)=>a+(Number(r.fields[F.revenue])||0),0);
+    const avgRev=visible.length?Math.round(totRev/visible.length):0;
 
     // KPI cards
     document.getElementById('kpi-grid').innerHTML=[
-      {label:'Shows'+(view==='month'?` · ${month}`:'  · all LA'),value:records.length},
+      {label:'Shows'+(view==='month'?` · ${month}`:'  · all LA'),value:visible.length},
       {label:'Tickets sold',value:totTix.toLocaleString()},
       {label:'USD revenue',value:f$(totRev)},
       {label:'Avg per show',value:f$(avgRev)},
@@ -316,7 +322,7 @@
     document.getElementById('seg-month').className='seg-btn'+(view==='month'?' active':'');
     document.getElementById('seg-all').className='seg-btn'+(view==='all'?' active':'');
     document.getElementById('month-input').style.display=view==='month'?'':'none';
-    document.getElementById('count-label').textContent=`${records.length} show${records.length!==1?'s':''}`;
+    document.getElementById('count-label').textContent=`${visible.length} show${visible.length!==1?'s':''}`;
 
     if(!sorted.length){
       document.getElementById('tbl-body').innerHTML=`<tr class="empty-row"><td colspan="6">No shows found${view==='month'?' for '+month:''}</td></tr>`;
@@ -336,28 +342,44 @@
     let html='';
     let totCap=0;
 
+    // Hidden count for toolbar
+    const totalHidden=sorted.filter(r=>hiddenIds.has(r.id)).length;
+    const toggleBtn=document.getElementById('hidden-toggle-btn');
+    if(totalHidden>0){
+      toggleBtn.style.display='';
+      toggleBtn.textContent=S.showHidden?`hide hidden (${totalHidden})`:`show hidden (${totalHidden})`;
+    }else{
+      toggleBtn.style.display='none';
+    }
+
     weekKeys.forEach((wk,wi)=>{
-      const rows=weekMap.get(wk);
-      const wkTix=rows.reduce((a,r)=>a+(Number(r.fields[F.tickets])||0),0);
-      const wkRev=rows.reduce((a,r)=>a+(Number(r.fields[F.revenue])||0),0);
+      const allRows=weekMap.get(wk);
+      // For totals, only count visible (non-hidden) rows
+      const visRows=allRows.filter(r=>!hiddenIds.has(r.id));
+      const wkTix=visRows.reduce((a,r)=>a+(Number(r.fields[F.tickets])||0),0);
+      const wkRev=visRows.reduce((a,r)=>a+(Number(r.fields[F.revenue])||0),0);
       const hitWeekly=wkRev>=WEEKLY_GOAL;
       const wkBand=wi%2===0?'week-even':'week-odd';
-
-      // Week header row — color based on hitting weekly goal
       const wkColor=view==='month'?(hitWeekly?'var(--teal)':'var(--amber)'):'var(--muted)';
       const wkGoalStr=view==='month'?` · ${f$(wkRev)} ${hitWeekly?'✓':''} / $${WEEKLY_GOAL.toLocaleString()} goal`:`· ${f$(wkRev)}`;
+
+      // Skip week entirely if all rows hidden and not showing hidden
+      const rowsToShow=allRows.filter(r=>S.showHidden||!hiddenIds.has(r.id));
+      if(!rowsToShow.length)return;
+
       html+=`<tr class="week-hdr ${wkBand}">
         <td colspan="7" style="color:${wkColor}">
           Week ${wi+1} · ${weekRangeLabel(wk)}${wkGoalStr}
         </td>
       </tr>`;
 
-      rows.forEach((r,ri)=>{
+      rowsToShow.forEach((r,ri)=>{
         const tix=Number(r.fields[F.tickets])||0;
         const cap=Number(r.fields[F.cap])||0;
         const rev=Number(r.fields[F.revenue])||0;
-        const isLast=ri===rows.length-1;
-        totCap+=cap;
+        const isHidden=hiddenIds.has(r.id);
+        const isLast=ri===rowsToShow.length-1;
+        if(!isHidden)totCap+=cap;
 
         let badge;
         if(tix===0&&rev===0){
@@ -368,25 +390,33 @@
           badge=`<span class="badge badge-risk">${MIN_RUN-tix} to run</span>`;
         }
 
-        html+=`<tr class="${wkBand}${isLast?' week-last':''}">
+        const hideTitle=isHidden?'Restore show':'Hide show';
+        const hideIcon=isHidden?'↩':'×';
+        const hiddenClass=isHidden?' row-hidden':'';
+
+        html+=`<tr class="${wkBand}${isLast?' week-last':''}${hiddenClass}">
           <td><div class="date-cell"><div class="date-dow">${fmtDow(r.fields[F.date])}</div><div class="date-day">${fmtShort(r.fields[F.date])}</div></div></td>
           <td>${r.fields[F.venue]||'—'}</td>
-          <td class="r">${tix>0?tix.toLocaleString():'—'}</td>
-          <td class="r" style="color:var(--muted)">${cap>0?cap.toLocaleString():'—'}</td>
-          <td class="r">${badge}</td>
-          <td class="r">${rev>0?f$(rev):'—'}</td>
-          <td style="padding:0 8px"><button class="del-btn" onclick="deleteRecord('${r.id}')" title="Remove from Airtable">✕</button></td>
+          <td class="r">${!isHidden&&tix>0?tix.toLocaleString():'—'}</td>
+          <td class="r" style="color:var(--muted)">${!isHidden&&cap>0?cap.toLocaleString():'—'}</td>
+          <td class="r">${!isHidden?badge:'—'}</td>
+          <td class="r">${!isHidden&&rev>0?f$(rev):'—'}</td>
+          <td style="padding:0 8px"><button class="hide-btn" onclick="${isHidden?'unhideRecord':'hideRecord'}('${r.id}')" title="${hideTitle}">${hideIcon}</button></td>
         </tr>`;
       });
     });
 
     document.getElementById('tbl-body').innerHTML=html;
+    // Totals only from visible records
+    const visSorted=sorted.filter(r=>!hiddenIds.has(r.id));
+    const visTix=visSorted.reduce((a,r)=>a+(Number(r.fields[F.tickets])||0),0);
+    const visRev=visSorted.reduce((a,r)=>a+(Number(r.fields[F.revenue])||0),0);
     document.getElementById('tbl-foot').innerHTML=`<tr>
-      <td colspan="2">Total · ${records.length} shows</td>
-      <td class="r">${totTix.toLocaleString()}</td>
+      <td colspan="2">Total · ${visSorted.length} show${visSorted.length!==1?'s':''}</td>
+      <td class="r">${visTix.toLocaleString()}</td>
       <td class="r" style="color:var(--muted)">${totCap>0?totCap.toLocaleString():'—'}</td>
       <td class="r"></td>
-      <td class="r">${f$(totRev)}</td>
+      <td class="r">${f$(visRev)}</td>
       <td></td>
     </tr>`;
 
@@ -445,16 +475,21 @@
     document.getElementById('disconnect-btn').style.display='';
   }
 
-  async function deleteRecord(id){
-    if(!confirm("Remove this show from Airtable?"))return;
-    const token=localStorage.getItem(TOKEN_KEY);
-    const p=new URLSearchParams({baseId:BASE,table:TABLE,recordId:id});
-    try{
-      const r=await fetch(`${PROXY}?${p}`,{method:"DELETE",headers:{"x-airtable-token":token}});
-      if(!r.ok)throw new Error((await r.json()).error?.message||r.statusText);
-      S.records=S.records.filter(rec=>rec.id!==id);
-      render();
-    }catch(e){alert("Delete failed: "+e.message);}
+  function hideRecord(id){
+    hiddenIds.add(id);
+    localStorage.setItem(HIDDEN_KEY,JSON.stringify([...hiddenIds]));
+    render();
+  }
+
+  function unhideRecord(id){
+    hiddenIds.delete(id);
+    localStorage.setItem(HIDDEN_KEY,JSON.stringify([...hiddenIds]));
+    render();
+  }
+
+  function toggleShowHidden(){
+    S.showHidden=!S.showHidden;
+    render();
   }
 
   function setView(v){S.view=v;doRefresh();}
