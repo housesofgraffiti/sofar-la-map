@@ -184,12 +184,13 @@
 
   function buildFormula(){
     const city=`{${F.city}}="la"`;
-    if(S.view==='all')return city;
+    const hasVenue=`NOT({${F.venue}}="")`;
+    if(S.view==='all')return`AND(${city},${hasVenue})`;
     const[yr,mo]=S.month.split('-').map(Number);
     const pad=n=>String(n).padStart(2,'0');
     const prevEnd=new Date(yr,mo-1,0),nextStart=new Date(yr,mo,1);
     const fmt=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-    return`AND(${city},IS_AFTER({${F.date}},'${fmt(prevEnd)}'),IS_BEFORE({${F.date}},'${fmt(nextStart)}'))`;
+    return`AND(${city},${hasVenue},IS_AFTER({${F.date}},'${fmt(prevEnd)}'),IS_BEFORE({${F.date}},'${fmt(nextStart)}'))`;
   }
 
   async function fetchAll(){
