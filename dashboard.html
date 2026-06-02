@@ -149,7 +149,7 @@
   let S={records:[],view:'month',month:'2026-06',fetchedAt:null};
 
   function buildFormula(){
-    const city=`FIND("la",LOWER(ARRAYJOIN({${F.city}})))`;
+    const city=`{${F.city}}="la"`;
     if(S.view==='all')return city;
     const[yr,mo]=S.month.split('-').map(Number);
     const pad=n=>String(n).padStart(2,'0');
