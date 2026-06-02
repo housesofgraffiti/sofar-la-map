@@ -70,6 +70,9 @@
     thead th.r{text-align:right}
     tbody tr{transition:background .1s}
     tbody tr:hover{filter:brightness(.97)}
+    .del-btn{opacity:0;background:none;border:none;cursor:pointer;color:var(--faint);padding:2px 4px;font-size:14px;line-height:1;font-family:inherit;border-radius:3px;transition:opacity .15s,color .15s}
+    tr:hover .del-btn{opacity:1}
+    .del-btn:hover{color:var(--coral)}
 
     /* Week header rows */
     tr.week-hdr td{
@@ -158,6 +161,7 @@
           <th class="r">Cap</th>
           <th class="r" title="Show runs at 30+ tickets sold">Status<br><span style="font-size:10px;letter-spacing:0;text-transform:none;font-weight:300">(runs ≥ 30)</span></th>
           <th class="r">Revenue</th>
+          <th style="width:32px"></th>
         </tr>
       </thead>
       <tbody id="tbl-body"></tbody>
@@ -343,7 +347,7 @@
       const wkColor=view==='month'?(hitWeekly?'var(--teal)':'var(--amber)'):'var(--muted)';
       const wkGoalStr=view==='month'?` · ${f$(wkRev)} ${hitWeekly?'✓':''} / $${WEEKLY_GOAL.toLocaleString()} goal`:`· ${f$(wkRev)}`;
       html+=`<tr class="week-hdr ${wkBand}">
-        <td colspan="6" style="color:${wkColor}">
+        <td colspan="7" style="color:${wkColor}">
           Week ${wi+1} · ${weekRangeLabel(wk)}${wkGoalStr}
         </td>
       </tr>`;
@@ -371,6 +375,7 @@
           <td class="r" style="color:var(--muted)">${cap>0?cap.toLocaleString():'—'}</td>
           <td class="r">${badge}</td>
           <td class="r">${rev>0?f$(rev):'—'}</td>
+          <td style="padding:0 8px"><button class="del-btn" onclick="deleteRecord('${r.id}')" title="Remove from Airtable">✕</button></td>
         </tr>`;
       });
     });
@@ -382,6 +387,7 @@
       <td class="r" style="color:var(--muted)">${totCap>0?totCap.toLocaleString():'—'}</td>
       <td class="r"></td>
       <td class="r">${f$(totRev)}</td>
+      <td></td>
     </tr>`;
 
     document.getElementById('footer-left').textContent=`Base: ${BASE} · Table: ${TABLE}`;
@@ -437,6 +443,18 @@
     document.getElementById('dashboard-view').style.display='';
     document.getElementById('refresh-btn').style.display='';
     document.getElementById('disconnect-btn').style.display='';
+  }
+
+  async function deleteRecord(id){
+    if(!confirm("Remove this show from Airtable?"))return;
+    const token=localStorage.getItem(TOKEN_KEY);
+    const p=new URLSearchParams({baseId:BASE,table:TABLE,recordId:id});
+    try{
+      const r=await fetch(`${PROXY}?${p}`,{method:"DELETE",headers:{"x-airtable-token":token}});
+      if(!r.ok)throw new Error((await r.json()).error?.message||r.statusText);
+      S.records=S.records.filter(rec=>rec.id!==id);
+      render();
+    }catch(e){alert("Delete failed: "+e.message);}
   }
 
   function setView(v){S.view=v;doRefresh();}
