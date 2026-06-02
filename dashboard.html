@@ -360,7 +360,7 @@
         }else if(tix>=MIN_RUN){
           badge=`<span class="badge badge-runs">RUNS</span>`;
         }else{
-          badge=`<span class="badge badge-risk">${tix} / cancel</span>`;
+          badge=`<span class="badge badge-risk">${MIN_RUN-tix} to run</span>`;
         }
 
         html+=`<tr class="${wkBand}${isLast?' week-last':''}">
