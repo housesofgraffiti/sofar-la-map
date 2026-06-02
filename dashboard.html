@@ -267,7 +267,7 @@
       {val:WEEKLY_GOAL,label:'W1 · '+f$(WEEKLY_GOAL),goal:false},
       {val:WEEKLY_GOAL*2,label:'W2 · '+f$(WEEKLY_GOAL*2),goal:false},
       {val:WEEKLY_GOAL*3,label:'W3 · '+f$(WEEKLY_GOAL*3),goal:false},
-      {val:MONTHLY_GOAL,label:'GOAL',goal:true},
+      {val:MONTHLY_GOAL,label:`GOAL · ${f$(MONTHLY_GOAL)}`,goal:true},
     ];
 
     const ticksHTML=ticks.map(t=>{
@@ -283,8 +283,8 @@
     const sect=document.getElementById('progress-section');
     sect.innerHTML=`
       <div class="progress-top">
-        <span class="progress-title">Monthly revenue</span>
-        <span class="progress-revenue">${f$(totRev)} <span>/ ${f$(BAR_MAX)}</span></span>
+        <span class="progress-title">Monthly revenue <span style="color:var(--border2);font-weight:300">· goal ${f$(MONTHLY_GOAL)}</span></span>
+        <span class="progress-revenue">${f$(totRev)} <span style="color:${hitGoal?'var(--teal)':'var(--muted)'}">${hitGoal?'✓ goal hit':'/ '+f$(MONTHLY_GOAL)}</span></span>
       </div>
       <div class="bar-container">
         <div class="bar-track"></div>
@@ -310,12 +310,21 @@
     const avgRev=visible.length?Math.round(totRev/visible.length):0;
 
     // KPI cards
-    document.getElementById('kpi-grid').innerHTML=[
+    const remaining=Math.max(0,MONTHLY_GOAL-totRev);
+    const goalHit=totRev>=MONTHLY_GOAL;
+    const kpiCards=[
       {label:'Shows'+(view==='month'?` · ${month}`:'  · all LA'),value:visible.length},
       {label:'Tickets sold',value:totTix.toLocaleString()},
-      {label:'USD revenue',value:f$(totRev)},
+      {label:'Revenue',value:f$(totRev),sub:view==='month'?(goalHit?'✓ goal hit':`${f$(remaining)} to goal`):null,subColor:goalHit?'var(--teal)':'var(--muted)'},
+      view==='month'?{label:'Monthly goal',value:f$(MONTHLY_GOAL),sub:'$6,694 / week',subColor:'var(--muted)'}:null,
       {label:'Avg per show',value:f$(avgRev)},
-    ].map(k=>`<div class="kpi-card"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div></div>`).join('');
+    ].filter(Boolean);
+    document.getElementById('kpi-grid').innerHTML=kpiCards.map(k=>`
+      <div class="kpi-card">
+        <div class="kpi-label">${k.label}</div>
+        <div class="kpi-value">${k.value}</div>
+        ${k.sub?`<div style="font-size:11px;color:${k.subColor};margin-top:5px">${k.sub}</div>`:''}
+      </div>`).join('');
 
     renderProgress(totRev);
 
