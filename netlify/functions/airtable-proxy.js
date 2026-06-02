@@ -24,11 +24,13 @@ exports.handler = async function(event) {
     baseId = 'appFjmrBPpOKVSdpz',
     table = 'Events',
     pageSize = '100',
-    offset
+    offset,
+    filterByFormula
   } = event.queryStringParameters || {};
 
   const params = new URLSearchParams({ pageSize });
   if (offset) params.append('offset', offset);
+  if (filterByFormula) params.append('filterByFormula', filterByFormula);
 
   const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(table)}?${params}`;
 
