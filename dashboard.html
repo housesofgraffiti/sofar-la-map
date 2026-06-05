@@ -182,8 +182,8 @@
   const PROXY='/.netlify/functions/airtable-proxy';
   const BASE='appFjmrBPpOKVSdpz';
   const TABLE='Events';
-  const MONTHLY_GOAL=26775;
-  const WEEKLY_GOAL=6694;
+  const MONTHLY_GOAL=33000;
+  const WEEKLY_GOAL=8250;
   const BAR_MAX=50000;
   const MIN_RUN=30;
   const TOKEN_KEY='sofar_at_token';
@@ -317,7 +317,7 @@
       {label:'Shows'+(view==='month'?` · ${month}`:'  · all LA'),value:visible.length},
       {label:'Tickets sold',value:totTix.toLocaleString()},
       {label:'Revenue',value:f$(totRev),sub:view==='month'?(goalHit?'✓ goal hit':`${f$(remaining)} to goal`):null,subColor:goalHit?'var(--teal)':'var(--muted)'},
-      view==='month'?{label:'Monthly goal',value:f$(MONTHLY_GOAL),sub:'$6,694 / week',subColor:'var(--muted)'}:null,
+      view==='month'?{label:'Monthly goal',value:f$(MONTHLY_GOAL),sub:'$8,250 / week',subColor:'var(--muted)'}:null,
       {label:'Avg per show',value:f$(avgRev)},
     ].filter(Boolean);
     document.getElementById('kpi-grid').innerHTML=kpiCards.map(k=>`
