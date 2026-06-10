@@ -143,6 +143,11 @@
 </div>
 
 <div id="dashboard-view" class="main" style="display:none">
+  <div class="seg" style="margin-bottom:18px">
+    <button class="seg-btn active" id="tab-sales" onclick="setTab('sales')">Sales</button>
+    <button class="seg-btn" id="tab-forecast" onclick="setTab('forecast')">Forecast</button>
+  </div>
+  <div id="sales-pane">
   <div class="kpi-grid" id="kpi-grid"></div>
   <div class="progress-section" id="progress-section"></div>
   <div class="toolbar">
@@ -173,6 +178,8 @@
       <tfoot id="tbl-foot"></tfoot>
     </table>
   </div>
+  </div><!-- /sales-pane -->
+  <div id="forecast-pane" style="display:none"></div>
   <div class="page-footer">
     <span id="footer-left"></span>
     <span id="footer-right"></span>
@@ -257,6 +264,125 @@ window.PREDICTOR_DATA={"milestones":[30,21,14,10,7,5,4,3,2,1,0],"periods":{"all"
     const tixStr=p.loTix===p.hiTix?`${p.loTix}`:`${p.loTix}–${p.hiTix}`;
     const revStr=p.loRev===p.hiRev?`$${p.loRev.toLocaleString()}`:`$${p.loRev.toLocaleString()}–$${p.hiRev.toLocaleString()}`;
     return `<div style="font-weight:500">${tixStr}${p.sellout?' <span style="color:var(--amber);font-size:9px">SELLOUT</span>':''}</div><div style="font-size:11px;color:var(--muted)">${revStr}</div>`;
+  }
+
+  // ── Forecast tab ──────────────────────────────────────────
+  function setTab(t){
+    const sales=t!=='forecast';
+    document.getElementById('sales-pane').style.display=sales?'':'none';
+    document.getElementById('forecast-pane').style.display=sales?'none':'';
+    document.getElementById('tab-sales').className='seg-btn'+(sales?' active':'');
+    document.getElementById('tab-forecast').className='seg-btn'+(sales?'':' active');
+    const sp=document.querySelector('.logo span'); if(sp)sp.textContent=sales?'/ Sales':'/ Forecast';
+    if(!sales)renderForecast();
+  }
+  function fcProject(sel,dow,days,sold,cap){
+    if(!PD)return null;
+    let prior,klass='typical',basis,vobj=null;
+    if(sel&&sel.slice(0,2)==='v:'){vobj=PD.venues.find(x=>x.name===sel.slice(2));
+      if(vobj){prior={med:vobj.draw_med,lo:vobj.draw_p25,hi:vobj.draw_p75};klass=vobj.klass;basis=vobj.name+' — own history · '+vobj.shows+' shows';}}
+    else if(sel&&sel.slice(0,2)==='n:'){const n=PD.nbhd_draw[sel.slice(2)];
+      if(n){prior={med:n.med,lo:n.p25,hi:n.p75};basis=sel.slice(2)+' — neighborhood average';}}
+    if(!prior){const dd=PD.dow_draw[dow];
+      if(dd&&PD.periods.all.by_dow[dow]&&PD.periods.all.by_dow[dow].shows>=5){prior={med:dd.med,lo:dd.p25,hi:dd.p75};basis=dow+' average';}
+      else{prior={med:PD.overall_draw.med,lo:PD.overall_draw.p25,hi:PD.overall_draw.p75};basis='LA average';}}
+    const seg=PD.periods.all.by_dow[dow];
+    const spread=(seg&&seg.spread&&seg.spread.n>=8)?seg.spread:PD.periods.all.overall.spread;
+    let boxes,loTix,hiTix,head;
+    if(days===0){
+      const d=(vobj&&vobj.dayof_med!=null)?{med:vobj.dayof_med,lo:vobj.dayof_lo,hi:vobj.dayof_hi}:(PD.dayof_dow&&PD.dayof_dow[dow])?PD.dayof_dow[dow]:PD.dayof_overall;
+      const pr=sh=>Math.round(sold/(1-Math.min(Math.max(sh,0),80)/100));
+      boxes=[{k:'light',label:'Light door',val:pr(d.lo)},{k:'typical',label:'Typical',val:pr(d.med)},{k:'big',label:'Big door',val:pr(d.hi)}];
+      loTix=pr(d.med);hiTix=pr(d.hi);head='typical';
+    }else{
+      const pf=pk=>{const fr=Math.max(1,pdInterp(spread[pk],days));return Math.round(sold+(1-fr/100)*prior.med);};
+      const early=pf('p80'),typ=pf('p50'),late=pf('p20');
+      boxes=[{k:'early',label:'Sells early',val:early},{k:'typical',label:'Typical',val:typ},{k:'late',label:'Runs late',val:late}];
+      if(klass==='early'){loTix=early;hiTix=typ;}else{loTix=typ;hiTix=late;}
+      head=(klass==='early')?'early':(klass==='late')?'late':'typical';
+    }
+    let sellout=false;
+    if(cap>0){boxes=boxes.map(b=>({...b,capped:b.val>=cap,val:Math.min(b.val,cap)}));if(hiTix>=cap){hiTix=cap;sellout=true;}if(loTix>cap)loTix=cap;}
+    if(loTix>hiTix){const t=loTix;loTix=hiTix;hiTix=t;}
+    return {prior,klass,basis,boxes,loTix,hiTix,head,sellout,dayOf:days===0};
+  }
+  function fcRender(){
+    const g=id=>document.getElementById(id);
+    if(!g('fc-venue'))return;
+    const sel=g('fc-venue').value,dow=g('fc-dow').value;
+    const days=Math.max(0,parseInt(g('fc-days').value)||0);
+    const sold=Math.max(0,parseInt(g('fc-sold').value)||0);
+    const cap=parseInt(g('fc-cap').value)||0;
+    const p=fcProject(sel,dow,days,sold,cap);
+    if(!p){g('fc-out').innerHTML='No data loaded.';return;}
+    const rng=p.loTix===p.hiTix?`${p.loTix}`:`${p.loTix}–${p.hiTix}`;
+    const boxHTML=p.boxes.map(b=>{const on=b.k===p.head;return `<div style="flex:1;text-align:center;padding:9px 4px;border:1px solid ${on?'var(--amber)':'var(--border)'};border-radius:8px;background:${on?'var(--amber-light)':'var(--surface)'}">
+      <div style="font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:${b.capped?'var(--coral)':'var(--muted)'}">${b.label}</div>
+      <div style="font-size:22px;font-weight:500;color:var(--text)">${b.val}</div>
+      <div style="font-size:9px;color:${b.capped?'var(--coral)':'var(--muted)'}">${b.capped?'sells out':(b.k==='late'||b.k==='big'?'high end':b.k==='early'||b.k==='light'?'low end':'most likely')}</div></div>`;}).join('');
+    g('fc-out').innerHTML=`
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)">Projected final${p.dayOf?' · day of show':''}</div>
+      <div style="font-size:34px;font-weight:500;color:var(--text);line-height:1.1;margin:2px 0 4px">${rng} <span style="font-size:14px;color:var(--muted)">tickets</span>${p.sellout?' <span style="font-size:11px;color:var(--coral)">SELLOUT</span>':''}</div>
+      <div style="display:flex;gap:8px;margin:12px 0 8px">${boxHTML}</div>
+      <div style="font-size:11px;color:var(--muted)">basis: ${p.basis} · typical draw ${p.prior.med} (${p.prior.lo}–${p.prior.hi})</div>`;
+  }
+  function fcBar(frac,color){return `<div style="height:7px;background:var(--surface3);border-radius:99px;overflow:hidden"><div style="height:100%;width:${Math.round(frac*100)}%;background:${color};border-radius:99px"></div></div>`;}
+  function renderForecast(){
+    if(!PD){document.getElementById('forecast-pane').innerHTML='<div style="padding:20px;color:var(--muted)">Predictor data not loaded.</div>';return;}
+    const card='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px';
+    const lbl='font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px';
+    const inp='width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--text);outline:none';
+    const venueOpts=PD.venues.map(v=>`<option value="v:${v.name}">${v.name}</option>`).join('');
+    const nbOpts=Object.keys(PD.nbhd_draw).map(n=>`<option value="n:${n}">${n} (neighborhood)</option>`).join('');
+    const dows=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const bd=PD.periods.all.by_dow, dd=PD.dow_draw;
+    const dShow=['Tue','Wed','Thu','Fri','Sat','Sun'].filter(d=>bd[d]);
+    const maxA=Math.max(...dShow.map(d=>bd[d].avg_tickets_per_show));
+    const dowRows=dShow.map(d=>{const s=bd[d],on=d==='Thu';return `<tr style="${on?'background:var(--amber-light)':''}">
+      <td style="padding:6px 8px;font-weight:${on?'500':'400'}">${d}${on?' ←':''}</td>
+      <td style="padding:6px 8px;width:38%">${fcBar(s.avg_tickets_per_show/maxA,on?'var(--amber)':'var(--muted)')}</td>
+      <td style="padding:6px 8px;text-align:right">${s.avg_tickets_per_show.toFixed(0)}</td>
+      <td style="padding:6px 8px;text-align:right;color:var(--muted)">${(dd[d]||{}).med||'–'}</td>
+      <td style="padding:6px 8px;text-align:right;color:var(--muted)">${s.median_days.toFixed(1)}d</td></tr>`;}).join('');
+    const bm=PD.periods.all.by_month, mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].filter(m=>bm[m]);
+    const annual=mo.reduce((a,m)=>a+bm[m].avg_tickets_per_show,0)/mo.length;
+    const maxM=Math.max(...mo.map(m=>bm[m].avg_tickets_per_show));
+    const moRows=mo.map(m=>{const s=bm[m],sum=['Jun','Jul','Aug'].indexOf(m)>=0;return `<tr style="${sum?'background:var(--amber-light)':''}">
+      <td style="padding:5px 8px;font-weight:${sum?'500':'400'}">${m}${sum?' ☀':''}</td>
+      <td style="padding:5px 8px;width:42%">${fcBar(s.avg_tickets_per_show/maxM,sum?'var(--amber)':'var(--muted)')}</td>
+      <td style="padding:5px 8px;text-align:right">${s.avg_tickets_per_show.toFixed(0)}</td>
+      <td style="padding:5px 8px;text-align:right;color:var(--muted)">${(s.avg_tickets_per_show/annual).toFixed(2)}×</td></tr>`;}).join('');
+    document.getElementById('forecast-pane').innerHTML=`
+      <div style="${card};margin-bottom:16px">
+        <div style="font-size:15px;font-weight:500;margin-bottom:4px">Attendance predictor</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Pick a venue (or neighborhood) and how far out the show is. The big number is the best guess; the three boxes show slow / normal / fast selling.</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:8px">
+          <div><div style="${lbl}">Venue / neighborhood</div><select id="fc-venue" style="${inp}" onchange="fcRender()"><optgroup label="Venues">${venueOpts}</optgroup><optgroup label="Neighborhoods">${nbOpts}</optgroup></select></div>
+          <div><div style="${lbl}">Day of week</div><select id="fc-dow" style="${inp}" onchange="fcRender()">${dows.map(d=>`<option${d==='Fri'?' selected':''}>${d}</option>`).join('')}</select></div>
+          <div><div style="${lbl}">Days until show</div><input id="fc-days" type="number" min="0" value="3" style="${inp}" oninput="fcRender()"></div>
+          <div><div style="${lbl}">Tickets sold</div><input id="fc-sold" type="number" min="0" value="0" style="${inp}" oninput="fcRender()"></div>
+          <div><div style="${lbl}">Room cap (optional)</div><input id="fc-cap" type="number" min="0" placeholder="blank=none" style="${inp}" oninput="fcRender()"></div>
+        </div>
+        <div id="fc-out" style="margin-top:14px"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+        <div style="${card}">
+          <div style="font-size:14px;font-weight:500;margin-bottom:2px">By day of week</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Thursday draws smaller and buys latest (2.2 days out) — artist-night territory.</div>
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <tr style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.04em"><td style="padding:4px 8px">Day</td><td style="padding:4px 8px">Avg / show</td><td style="padding:4px 8px;text-align:right">Avg</td><td style="padding:4px 8px;text-align:right">Draw</td><td style="padding:4px 8px;text-align:right">Buys</td></tr>
+          ${dowRows}</table>
+          <div style="font-size:10px;color:var(--muted);margin-top:8px">Mon hidden (single partnership outlier). "Buys" = median days before show.</div>
+        </div>
+        <div style="${card}">
+          <div style="font-size:14px;font-weight:500;margin-bottom:2px">Summer &amp; month patterns</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Summer (Jun–Aug) sits near the annual average; May is the real spike. Plan summer caps around normal, not peak.</div>
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <tr style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.04em"><td style="padding:4px 8px">Month</td><td style="padding:4px 8px">Avg / show</td><td style="padding:4px 8px;text-align:right">Avg</td><td style="padding:4px 8px;text-align:right">vs yr</td></tr>
+          ${moRows}</table>
+        </div>
+      </div>`;
+    fcRender();
   }
 
   function buildFormula(){
