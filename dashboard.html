@@ -152,7 +152,6 @@
     <button class="seg-btn" id="tab-nbhd" onclick="setTab('nbhd')">Neighborhoods</button>
     <button class="seg-btn" id="tab-crew" onclick="setTab('crew')">Crew</button>
     <button class="seg-btn" id="tab-recap" onclick="setTab('recap')">Recap</button>
-    <button class="seg-btn" id="tab-week1" onclick="setTab('week1')">Projections</button>
     <button class="seg-btn" id="tab-merch" onclick="setTab('merch')">Merch</button>
   </div>
   <div id="sales-pane">
@@ -193,7 +192,6 @@
   <div id="nbhd-pane" style="display:none"></div>
   <div id="crew-pane" style="display:none"></div>
   <div id="recap-pane" style="display:none"></div>
-  <div id="week1-pane" style="display:none"></div>
   <div id="merch-pane" style="display:none"></div>
   <div class="page-footer">
     <span id="footer-left"></span>
@@ -283,11 +281,11 @@ window.PREDICTOR_DATA={"milestones":[30,21,14,10,7,5,4,3,2,1,0],"periods":{"all"
 
   // ── Tabs ──────────────────────────────────────────
   function setTab(t){
-    const tabs=['sales','forecast','pl','breakdowns','nbhd','crew','recap','week1','merch'];
-    const panes={sales:'sales-pane',forecast:'forecast-pane',pl:'pl-pane',breakdowns:'breakdowns-pane',nbhd:'nbhd-pane',crew:'crew-pane',recap:'recap-pane',week1:'week1-pane',merch:'merch-pane'};
+    const tabs=['sales','forecast','pl','breakdowns','nbhd','crew','recap','merch'];
+    const panes={sales:'sales-pane',forecast:'forecast-pane',pl:'pl-pane',breakdowns:'breakdowns-pane',nbhd:'nbhd-pane',crew:'crew-pane',recap:'recap-pane',merch:'merch-pane'};
     tabs.forEach(k=>{const el=document.getElementById(panes[k]);if(el)el.style.display=(k===t)?'':'none';
       const b=document.getElementById('tab-'+k);if(b)b.className='seg-btn'+(k===t?' active':'');});
-    const labels={sales:'/ Sales',forecast:'/ Forecast',pl:'/ P&L',breakdowns:'/ Breakdowns',nbhd:'/ Neighborhoods',crew:'/ Crew',recap:'/ Recap',week1:'/ Projections',merch:'/ Merch'};
+    const labels={sales:'/ Sales',forecast:'/ Forecast',pl:'/ P&L',breakdowns:'/ Breakdowns',nbhd:'/ Neighborhoods',crew:'/ Crew',recap:'/ Recap',merch:'/ Merch'};
     const sp=document.querySelector('.logo span');if(sp)sp.textContent=labels[t]||'/ Sales';
     if(t==='forecast')renderForecast();
     if(t==='pl')renderPL();
@@ -295,7 +293,6 @@ window.PREDICTOR_DATA={"milestones":[30,21,14,10,7,5,4,3,2,1,0],"periods":{"all"
     if(t==='nbhd')renderNbhd();
     if(t==='crew')renderCrew();
     if(t==='recap')renderRecap();
-    if(t==='week1')renderWeek1();
     if(t==='merch')renderMerch();
   }
   // ── Forecast: attendance predictor ──────────────────
@@ -369,8 +366,14 @@ window.PREDICTOR_DATA={"milestones":[30,21,14,10,7,5,4,3,2,1,0],"periods":{"all"
           <div><div style="${lbl}">Room cap (optional)</div><input id="fc-cap" type="number" min="0" placeholder="blank=none" style="${inp}" oninput="fcRender()"></div>
         </div>
         <div id="fc-out" style="margin-top:14px"></div>
+      </div>
+      <div style="${card};margin-top:16px">
+        <div style="font-size:15px;font-weight:500;margin-bottom:3px">Avg tickets / show — summer pattern</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Week-by-week historical average (2022–2025): June, July, and August overlaid.</div>
+        <div style="height:200px"><canvas id="fc-summer-chart"></canvas></div>
       </div>`;
     fcRender();
+    drawSummerChart();
   }
   // ── P&L calculator ──────────────────────────────────
   function plCompute(i){
@@ -520,6 +523,52 @@ window.PREDICTOR_DATA={"milestones":[30,21,14,10,7,5,4,3,2,1,0],"periods":{"all"
   const NBHD_DATA=[["Westside","santa-monica",1815.75,72.5,54.3,44],["Outer LA","malibu",2231.07,120,72.4,27],["Westside","venice",1729.26,91,59.8,24],["DTLA","elysian-park",1433.01,113.6,58.9,21],["Hollywood / WeHo","west-hollywood",1393.92,75.5,49.3,20],["Central LA","west-adams",1083.32,56.9,41.8,19],["DTLA","arts-district",1948.06,130.3,71.9,18],["Westside","culver-city",1802.24,99.4,65.9,16],["DTLA","downtown-la",1285.76,110.2,44.7,13],["Central LA","mid-city-koreatown",1635.79,94.5,57.5,11],["Westside","mar-vista",1942.47,78.3,69.9,9],["Eastside","echo-park",1603.59,78.9,61.1,9],["Eastside","silver-lake",1064.09,62.8,42.4,9],["Hollywood / WeHo","hollywood",2046.21,139.4,77.8,8],["Eastside","los-feliz",1546.94,68.6,54.9,7],["Westside","marina-del-rey",1867.18,47.1,39.3,7],["Westside","playa-vista",1437.43,101.7,51.2,6],["Outer LA","south-pasadena",1405.67,60,49,6],["Central LA","beverly-grove",2030,84,78.3,6],["Westside","sawtelle",2031.88,102,58,5],["Central LA","mid-city",1626.28,90,70.8,5],["Hollywood / WeHo","beverly-hills",2461.18,91,84.8,4],["Outer LA","van-nuys",699.27,160,34,3],["Outer LA","sherman-oaks",553.1,82.5,26,2],["Outer LA","old-town-pasadena",1689.05,150,58.5,2],["Eastside","highland-park",1020,65,37,2],["Outer LA","pasadena",1635.1,85,58,2],["Hollywood / WeHo","laurel-canyon",1853.55,70,62.5,2],["Central LA","koreatown",1046.3,100,40,2],["Outer LA","south-bay",1192.6,75,38.5,2],["Outer LA","studio-city",1515.7,65,54,1],["Westside","west-la",1904,100,60,1],["Outer LA","tujunga",519.4,65,25,1],["Eastside","frogtown",494,150,21,1],["Central LA","la-brea",2048,100,67,1],["Outer LA","long-beach",1552,50,50,1],["Westside","brentwood",1144.1,60,34,1],["Eastside","atwater-village",895,80,36,1],["Outer LA","hermosa-beach",1037,70,31,1]];
   function titleCase(s){return s.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase());}
   function money0(n){return '$'+Math.round(n).toLocaleString('en-US');}
+  function buildNbhdScatter(){
+    const colors={'Central LA':'#4C7DA6','DTLA':'#E58A2B','Eastside':'#D6453F','Hollywood / WeHo':'#6BB1A8','Outer LA':'#4C9A4C','Westside':'#E2B33E'};
+    const rows=NBHD_DATA.map(r=>({area:r[0],name:titleCase(r[1]),sold:r[4],rev:r[2],shows:r[5]}));
+    const W=720,H=470,L=58,Rm=18,T=22,B=96;
+    const pw=W-L-Rm, ph=H-T-B;
+    const xs=rows.map(r=>r.sold), ys=rows.map(r=>r.rev);
+    const xMin=Math.floor((Math.min(...xs)-6)/10)*10, xMax=Math.ceil((Math.max(...xs)+6)/10)*10;
+    const yMax=Math.ceil(Math.max(...ys)*1.08/500)*500, yMin=0;
+    const sx=v=>L+(v-xMin)/(xMax-xMin)*pw;
+    const sy=v=>T+ph-(v-yMin)/(yMax-yMin)*ph;
+    const mean=a=>a.reduce((x,y)=>x+y,0)/a.length;
+    const meanX=mean(xs), meanY=mean(ys);
+    const rad=s=>Math.max(4,Math.sqrt(s)*4.0);
+    // y gridlines + ticks
+    let grid='';
+    for(let v=0;v<=yMax;v+=500){const y=sy(v);grid+=`<line x1="${L}" y1="${y}" x2="${L+pw}" y2="${y}" stroke="var(--border)" stroke-width="1"/><text x="${L-8}" y="${y+3}" text-anchor="end" font-size="9" fill="var(--muted)">${v===0?'0':'$'+(v/1000)+'k'}</text>`;}
+    // x ticks
+    let xtick='';
+    for(let v=xMin;v<=xMax;v+=10){if(v<=0)continue;const x=sx(v);xtick+=`<text x="${x}" y="${T+ph+16}" text-anchor="middle" font-size="9" fill="var(--muted)">${v}</text>`;}
+    // average crosshair
+    const ax=sx(meanX), ay=sy(meanY);
+    const avg=`<line x1="${ax}" y1="${T}" x2="${ax}" y2="${T+ph}" stroke="var(--border2)" stroke-dasharray="3 3" stroke-width="1"/>
+      <line x1="${L}" y1="${ay}" x2="${L+pw}" y2="${ay}" stroke="var(--border2)" stroke-dasharray="3 3" stroke-width="1"/>
+      <text x="${ax+4}" y="${T+9}" font-size="8" fill="var(--muted)">avg sold</text>
+      <text x="${L+3}" y="${ay-4}" font-size="8" fill="var(--muted)">avg rev</text>`;
+    // bubbles (big first)
+    const sorted=[...rows].sort((a,b)=>b.shows-a.shows);
+    const bub=sorted.map(r=>{
+      const cx=sx(r.sold),cy=sy(r.rev),rr=rad(r.shows),c=colors[r.area]||'#999';
+      const lbl=r.shows>=5?`<text x="${cx+rr+3}" y="${cy+3}" font-size="9" fill="var(--text)">${r.name}</text>`:'';
+      return `<circle cx="${cx}" cy="${cy}" r="${rr}" fill="${c}" fill-opacity="0.7" stroke="${c}" stroke-width="1"><title>${r.name} — ${r.shows} shows · ${r.sold} sold · ${money0(r.rev)}/show</title></circle>${lbl}`;
+    }).join('');
+    // axis titles
+    const titles=`<text x="${L+pw/2}" y="${T+ph+30}" text-anchor="middle" font-size="10" fill="var(--muted)">Avg tickets sold / show</text>
+      <text transform="translate(14 ${T+ph/2}) rotate(-90)" text-anchor="middle" font-size="10" fill="var(--muted)">Avg revenue / show</text>`;
+    // legend
+    const areas=Object.keys(colors);
+    let lx=L, leg='';
+    areas.forEach(a=>{const w=a.length*5.6+18;leg+=`<rect x="${lx}" y="${H-26}" width="9" height="9" rx="2" fill="${colors[a]}"/><text x="${lx+13}" y="${H-18}" font-size="9" fill="var(--muted)">${a}</text>`;lx+=w;if(lx>W-90){lx=L;}});
+    return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" xmlns="http://www.w3.org/2000/svg" font-family="'DM Mono',monospace">
+      ${grid}${xtick}${avg}${bub}${titles}
+      <line x1="${L}" y1="${T+ph}" x2="${L+pw}" y2="${T+ph}" stroke="var(--border2)" stroke-width="1"/>
+      <line x1="${L}" y1="${T}" x2="${L}" y2="${T+ph}" stroke="var(--border2)" stroke-width="1"/>
+      ${leg}
+    </svg>`;
+  }
   function renderNbhd(){
     const card='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px';
     const areas={};NBHD_DATA.forEach(r=>{(areas[r[0]]=areas[r[0]]||[]).push(r);});
@@ -539,7 +588,12 @@ window.PREDICTOR_DATA={"milestones":[30,21,14,10,7,5,4,3,2,1,0],"periods":{"all"
           <td style="padding:7px 10px;width:24%"><div style="height:6px;background:var(--surface3);border-radius:99px"><div style="height:100%;width:${Math.round(r[2]/maxRev*100)}%;background:var(--amber);border-radius:99px"></div></div></td>
         </tr>`;});
     });
-    document.getElementById('nbhd-pane').innerHTML=`<div style="${card}">
+    document.getElementById('nbhd-pane').innerHTML=`<div style="${card};margin-bottom:16px">
+      <div style="font-size:15px;font-weight:500;margin-bottom:4px">Neighborhood map</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Avg sold vs. avg revenue per show. Bubble size = show count; color = LA region; dashed lines mark the averages.</div>
+      ${buildNbhdScatter()}
+    </div>
+    <div style="${card}">
       <div style="font-size:15px;font-weight:500;margin-bottom:4px">Neighborhood performance</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:14px">All-time, grouped by LA region (most active first). Fill = avg sold ÷ avg capacity.</div>
       <table style="width:100%;border-collapse:collapse;font-size:13px">
@@ -617,56 +671,21 @@ window.PREDICTOR_DATA={"milestones":[30,21,14,10,7,5,4,3,2,1,0],"periods":{"all"
       </div>`;
   }
 
-  // ── Projections (Week 1) tab ────────────────────────
-  let w1Off=false, w1Chart=null;
-  function setW1(off){w1Off=off;renderWeek1();}
-  function renderWeek1(){
-    if(typeof Chart==='undefined'){document.getElementById('week1-pane').innerHTML='<div style="padding:20px;color:var(--muted)">Chart library not loaded.</div>';return;}
-    const card='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px';
-    const base={tix:'260',avg:'43',rev:'$8,740',team:'$2,729',ads:'$2,479',count:'6 shows',tTix:'260',tRev:'$8,740',tProfit:'$4,229'};
-    const canc={tix:'225',avg:'45',rev:'$7,690',team:'$2,441',ads:'$2,191',count:'5 shows',tTix:'225',tRev:'$7,690',tProfit:'$3,941'};
-    const d=w1Off?canc:base;
-    const pill={wed:'background:#EEEDFE;color:#3C3489',thu:'background:#E1F5EE;color:#085041',fri:'background:#DDEEFF;color:#0C447C',sat:'background:#FFF0DC;color:#7A4800',sun:'background:#FDECEA;color:#8B2A1A'};
-    const shows=[['wed','Wed 6/3','Hotel Covell','Los Feliz','Artist hosted','40','$1,200','$610',0],['wed','Wed 6/3','Melrose Umbrella Co.','West Hollywood','Artist hosted','35','$1,050','$288',0],['thu','Thu 6/4','Interior Define','La Brea','Artist hosted','35','$1,050','$288',1],['fri','Fri 6/5','Zula Den','West Adams','Discovery','45','$1,620','$1,019',0],['sat','Sat 6/6','LUCA','Beverly Grove','Discovery','65','$2,340','$1,523',0],['sun','Sun 6/7','Flavors From Afar','Hollywood','Local producer','40','$1,480','$500',0]];
-    const kpi=(l,v,hl)=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:5px">${l}</div><div style="font-size:20px;font-weight:500;color:${hl?'var(--green)':'var(--text)'}">${v}</div></div>`;
-    const rows=shows.map(s=>{const dim=w1Off&&s[8];return `<tr style="${dim?'opacity:.35;text-decoration:line-through;':''}border-top:1px solid var(--border)">
-      <td style="padding:9px 12px"><span style="${pill[s[0]]};font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;white-space:nowrap">${s[1]}</span></td>
-      <td style="padding:9px 12px"><div style="font-weight:500">${s[2]}</div><div style="font-size:11px;color:var(--muted)">${s[3]}</div></td>
-      <td style="padding:9px 12px"><span style="font-size:10px;border:1px solid var(--border);border-radius:4px;padding:2px 7px;color:var(--muted)">${s[4]}</span></td>
-      <td style="padding:9px 12px;text-align:right">${s[5]}</td><td style="padding:9px 12px;text-align:right">${s[6]}</td><td style="padding:9px 12px;text-align:right">${s[7]}</td></tr>`;}).join('');
-    document.getElementById('week1-pane').innerHTML=`
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <div style="font-size:15px;font-weight:500">June 2026 · Week 1 projections</div>
-        <button onclick="setW1(${w1Off?'false':'true'})" style="display:flex;align-items:center;gap:8px;background:${w1Off?'#FFF0DC':'var(--surface)'};border:1px solid ${w1Off?'#D4860A':'var(--border)'};border-radius:8px;padding:7px 12px;font-family:inherit;font-size:12px;font-weight:500;color:${w1Off?'#7A4800':'var(--muted)'};cursor:pointer"><span style="width:8px;height:8px;border-radius:50%;background:${w1Off?'#D4860A':'#D4E4D4'}"></span>w/o Interior Define</button>
-      </div>
-      <div style="${card};margin-bottom:16px">
-        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">Avg tickets / show — summer pattern (2022–2025)</div>
-        <div style="height:140px"><canvas id="w1-chart"></canvas></div>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
-        ${kpi('Total tickets',d.tix)}${kpi('Avg tix / show',d.avg)}${kpi('June rev goal','$26,775')}
-        ${kpi('Projected revenue',d.rev)}${kpi('Profit (w/ team)',d.team)}${kpi('Profit (after ads)',d.ads,1)}
-      </div>
-      <div style="${card};padding:0;overflow:hidden;margin-bottom:16px">
-        <table style="width:100%;border-collapse:collapse;font-size:13px">
-          <tr style="background:var(--surface2);color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.05em"><td style="padding:9px 12px">Date</td><td style="padding:9px 12px">Venue</td><td style="padding:9px 12px">Type</td><td style="padding:9px 12px;text-align:right">Tix</td><td style="padding:9px 12px;text-align:right">Rev</td><td style="padding:9px 12px;text-align:right">Profit</td></tr>
-          ${rows}
-          <tr style="background:var(--surface2);font-weight:600;border-top:2px solid var(--border2)"><td colspan="3" style="padding:10px 12px">${d.count}</td><td style="padding:10px 12px;text-align:right">${d.tTix}</td><td style="padding:10px 12px;text-align:right">${d.tRev}</td><td style="padding:10px 12px;text-align:right">${d.tProfit}</td></tr>
-        </table>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <div style="${card};border-left:3px solid #D4860A;font-size:12px;color:var(--text);line-height:1.6"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#D4860A;margin-bottom:6px">Revenue target context</div>Pattern target of <strong>$4,883</strong> is built on 4 historical shows — we're running 6. Scaled to actual count, <strong>$7,324</strong> is the real benchmark; the $8,740 projection sits above it, which fits with two Discovery shows on the slate.</div>
-        <div style="${card};border-left:3px solid #2B6CB0;font-size:12px;color:var(--text);line-height:1.6"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#2B6CB0;margin-bottom:6px">Ticket milestone</div>260 tickets would be our <strong>3rd highest week in 2026</strong>.</div>
-        <div style="${card};border-left:3px solid #B0AB9E;font-size:12px;color:var(--muted);line-height:1.6"><div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">Cost assumptions</div><strong style="color:var(--text)">$1,500/wk</strong> team (marketing, venues, artist booking) · <strong style="color:var(--text)">$250/wk</strong> ad spend</div>
-      </div>`;
+  // ── Summer pattern chart (used in Forecast tab) ─────
+  let fcSummerChart=null;
+  function drawSummerChart(){
+    if(typeof Chart==='undefined')return;
+    const el=document.getElementById('fc-summer-chart');
+    if(!el)return;
     const labels=['W1','W2','W3','W4','W5','W1','W2','W3','W4','W5','W1','W2','W3','W4','W5'];
     const jun=[57.5,59.2,52.4,51.9,60.33,62.6,null,null,null,null,null,null,null,null,null];
     const jul=[null,null,null,null,60.33,62.6,71.1,67.3,58.1,49.8,55.6,null,null,null,null];
     const aug=[null,null,null,null,null,null,null,null,null,49.8,55.6,59.6,68.2,74.3,57];
     const mk=(data,c)=>({data,borderColor:c,backgroundColor:c,pointRadius:data.map(v=>v==null?0:3),borderWidth:2,tension:0.35,spanGaps:false});
-    if(w1Chart)w1Chart.destroy();
-    w1Chart=new Chart(document.getElementById('w1-chart'),{type:'line',data:{labels,datasets:[mk(jun,'#BA9650'),mk(jul,'#C0513A'),mk(aug,'#4C7DA6')]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{title:i=>{const x=i[0].dataIndex;return (x<5?'June ':x<10?'July ':'Aug ')+labels[x];},label:i=>' '+i.raw+' avg tix/show'}}},scales:{x:{grid:{display:false},ticks:{font:{family:"'DM Mono',monospace",size:9},callback:(v,i)=>i===5||i===10?'|':labels[i]}},y:{min:44,max:78,grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{family:"'DM Mono',monospace",size:9}}}}}});
+    if(fcSummerChart)fcSummerChart.destroy();
+    fcSummerChart=new Chart(el,{type:'line',data:{labels,datasets:[mk(jun,'#BA9650'),mk(jul,'#C0513A'),mk(aug,'#4C7DA6')]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{title:i=>{const x=i[0].dataIndex;return (x<5?'June ':x<10?'July ':'Aug ')+labels[x];},label:i=>' '+i.raw+' avg tix/show'}}},scales:{x:{grid:{display:false},ticks:{font:{family:"'DM Mono',monospace",size:9},callback:(v,i)=>i===5||i===10?'|':labels[i]}},y:{min:44,max:78,grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{family:"'DM Mono',monospace",size:9}}}}}});
   }
+
   // ── Merch tab ───────────────────────────────────────
   function renderMerch(){
     const card='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px';
