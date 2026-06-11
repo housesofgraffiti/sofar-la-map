@@ -4,8 +4,8 @@
 //   CLAUDE_API_KEY   (required)  your Anthropic API key
 //   DASH_PASSCODE    (optional)  shared team passcode; if set, callers must match it
 
-const CLAUDE_KEY = process.env.CLAUDE_API_KEY;
-const GATE       = process.env.DASH_PASSCODE;
+const CLAUDE_KEY = process.env.claude_api;
+const GATE       = process.env.Dash_Passcode;
 
 exports.handler = async (event) => {
   const cors = {
