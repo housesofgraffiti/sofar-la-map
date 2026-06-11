@@ -118,7 +118,47 @@
     .page-footer{margin-top:14px;display:flex;justify-content:space-between;font-size:11px;color:var(--faint);flex-wrap:wrap;gap:6px}
     @keyframes spin{to{transform:rotate(360deg)}}
     .spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--border2);border-top-color:var(--text);border-radius:50%;animation:spin .65s linear infinite;vertical-align:-2px;margin-right:6px}
-    @media(max-width:640px){.main{padding:16px 12px 32px}.header{padding:0 14px}.kpi-value{font-size:20px}.bar-tick{font-size:9px}}
+    @media(max-width:640px){
+      /* Header */
+      .header{padding:0 12px;height:44px}
+      .header-right{gap:6px}
+      #last-updated{display:none}
+      .btn{padding:4px 8px;font-size:11px}
+
+      /* Tab bar: single scrollable row */
+      .seg{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+      .seg::-webkit-scrollbar{display:none}
+      .seg-btn{white-space:nowrap;padding:6px 11px;font-size:11px;flex-shrink:0}
+
+      /* Main padding */
+      .main{padding:12px 10px 40px}
+
+      /* KPI grid: 2 columns */
+      .kpi-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+      .kpi-value{font-size:20px}
+      .kpi-card{padding:12px 14px}
+
+      /* Progress bar */
+      .progress-section{padding:14px}
+      .bar-tick{font-size:9px}
+
+      /* Toolbar */
+      .toolbar{gap:6px}
+      .count-label{display:none}
+
+      /* Tables */
+      td,thead th{padding:7px 8px;font-size:12px}
+      tfoot td{padding:8px}
+
+      /* Connect card */
+      .connect-card{padding:24px 18px}
+
+      /* Force all inline-style grids to single column on mobile */
+      [style*="grid-template-columns"]{grid-template-columns:1fr !important}
+
+      /* Chart containers: cap height on mobile */
+      canvas{max-height:220px}
+    }
   </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 </head>
