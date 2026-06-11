@@ -4,8 +4,8 @@
 //   AIRTABLE_TOKEN   (required)  a scoped, read-only Airtable personal access token
 //   DASH_PASSCODE    (optional)  a shared team passcode; if set, callers must match it
 
-const TOKEN = process.env.AIRTABLE_TOKEN;
-const GATE  = process.env.DASH_PASSCODE;
+const TOKEN = process.env.airtable_api;
+const GATE  = process.env.Dash_Passcode;
 
 exports.handler = async (event) => {
   const cors = {
