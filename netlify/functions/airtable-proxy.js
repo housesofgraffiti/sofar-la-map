@@ -1,57 +1,58 @@
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, x-airtable-token',
-  'Access-Control-Allow-Methods': 'GET, DELETE, OPTIONS'
-};
+// netlify/functions/airtable-proxy.js
+// Holds the Airtable token server-side. The browser never sees it.
+// Set these in Netlify → Site settings → Environment variables:
+//   AIRTABLE_TOKEN   (required)  a scoped, read-only Airtable personal access token
+//   DASH_PASSCODE    (optional)  a shared team passcode; if set, callers must match it
 
-exports.handler = async function(event) {
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers: CORS, body: '' };
+const TOKEN = process.env.AIRTABLE_TOKEN;
+const GATE  = process.env.DASH_PASSCODE;
+
+exports.handler = async (event) => {
+  const cors = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'x-dash-pass, content-type',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  };
+
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: cors };
+
+  if (!TOKEN) {
+    return { statusCode: 500, headers: cors,
+      body: JSON.stringify({ error: { message: 'Server is missing AIRTABLE_TOKEN' } }) };
   }
 
-  const token = event.headers['x-airtable-token'];
-  if (!token) {
-    return {
-      statusCode: 401,
-      headers: CORS,
-      body: JSON.stringify({ error: { message: 'Missing x-airtable-token header' } })
-    };
+  // Optional passcode gate (checked on the server)
+  if (GATE) {
+    const given = event.headers['x-dash-pass'] || event.headers['X-Dash-Pass'];
+    if (given !== GATE) {
+      return { statusCode: 401, headers: cors,
+        body: JSON.stringify({ error: { message: 'Incorrect passcode' } }) };
+    }
   }
 
-  const {
-    baseId = 'appFjmrBPpOKVSdpz',
-    table = 'Events',
-    recordId,
-    pageSize = '100',
-    offset,
-    filterByFormula
-  } = event.queryStringParameters || {};
+  const q = event.queryStringParameters || {};
+  const { baseId, table, pageSize, offset, filterByFormula } = q;
 
-  const headers = { ...CORS, 'Content-Type': 'application/json' };
+  if (!baseId || !table) {
+    return { statusCode: 400, headers: cors,
+      body: JSON.stringify({ error: { message: 'Missing baseId or table' } }) };
+  }
+
+  const url = new URL(`https://api.airtable.com/v0/${baseId}/${encodeURIComponent(table)}`);
+  if (pageSize)       url.searchParams.set('pageSize', pageSize);
+  if (offset)         url.searchParams.set('offset', offset);
+  if (filterByFormula) url.searchParams.set('filterByFormula', filterByFormula);
 
   try {
-    // DELETE a single record
-    if (event.httpMethod === 'DELETE') {
-      if (!recordId) {
-        return { statusCode: 400, headers, body: JSON.stringify({ error: { message: 'Missing recordId' } }) };
-      }
-      const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(table)}/${recordId}`;
-      const res = await fetch(url, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-      const data = await res.json();
-      return { statusCode: res.status, headers, body: JSON.stringify(data) };
-    }
-
-    // GET records
-    const params = new URLSearchParams({ pageSize });
-    if (offset) params.append('offset', offset);
-    if (filterByFormula) params.append('filterByFormula', filterByFormula);
-
-    const url = `https://api.airtable.com/v0/${baseId}/${encodeURIComponent(table)}?${params}`;
-    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
-    const data = await res.json();
-    return { statusCode: res.status, headers, body: JSON.stringify(data) };
-
-  } catch (err) {
-    return { statusCode: 500, headers, body: JSON.stringify({ error: { message: err.message } }) };
+    const r = await fetch(url, { headers: { Authorization: `Bearer ${TOKEN}` } });
+    const data = await r.json();
+    return {
+      statusCode: r.status,
+      headers: { ...cors, 'content-type': 'application/json' },
+      body: JSON.stringify(data),
+    };
+  } catch (e) {
+    return { statusCode: 502, headers: cors,
+      body: JSON.stringify({ error: { message: e.message } }) };
   }
 };
