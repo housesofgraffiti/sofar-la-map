@@ -129,15 +129,15 @@
   <div class="header-right">
     <span id="last-updated" style="font-size:11px;color:var(--muted)"></span>
     <button class="btn" id="refresh-btn" style="display:none" onclick="doRefresh()">Refresh</button>
-    <button class="btn" id="disconnect-btn" style="display:none" onclick="disconnect()">Disconnect</button>
+    <button class="btn" id="disconnect-btn" style="display:none" onclick="disconnect()">Sign out</button>
   </div>
 </header>
 
 <div id="connect-view" class="connect-screen">
   <div class="connect-card">
-    <h2>Connect to Airtable</h2>
-    <p>Enter your Airtable personal access token. Saved in your browser — you won't need to re-enter it.</p>
-    <input type="password" class="token-input" id="token-input" placeholder="pat…" autocomplete="off">
+    <h2>Sofar LA dashboard</h2>
+    <p>Enter the team passcode. Saved in your browser — you won't need to re-enter it.</p>
+    <input type="password" class="token-input" id="token-input" placeholder="passcode" autocomplete="off">
     <div class="connect-error" id="connect-error"></div>
     <button class="btn btn-primary" id="connect-btn" onclick="doConnect()">Connect</button>
   </div>
@@ -210,7 +210,7 @@ window.PREDICTOR_DATA={"milestones":[30,21,14,10,7,5,4,3,2,1,0],"periods":{"all"
   const WEEKLY_GOAL=8250;
   const BAR_MAX=50000;
   const MIN_RUN=30;
-  const TOKEN_KEY='sofar_at_token';
+  const PASS_KEY='sofar_dash_pass';
   const HIDDEN_KEY='sofar_hidden_ids';
   const F={date:'Show Date',city:'City',venue:'Venue Name',tickets:'Tickets Sold',cap:'Tickets Available',revenue:'USD Revenue',nbhd:'Neighborhood Cache'};
   let S={records:[],view:'month',month:'2026-06',fetchedAt:null,showHidden:false};
@@ -741,14 +741,14 @@ window.PREDICTOR_DATA={"milestones":[30,21,14,10,7,5,4,3,2,1,0],"periods":{"all"
   }
 
   async function fetchAll(){
-    const token=localStorage.getItem(TOKEN_KEY);
+    const pass=localStorage.getItem(PASS_KEY);
     let all=[],offset=null;
     const formula=buildFormula();
     do{
       const p=new URLSearchParams({baseId:BASE,table:TABLE,pageSize:100});
       p.append('filterByFormula',formula);
       if(offset)p.append('offset',offset);
-      const r=await fetch(`${PROXY}?${p}`,{headers:{'x-airtable-token':token}});
+      const r=await fetch(`${PROXY}?${p}`,{headers:{'x-dash-pass':pass}});
       if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error?.message||`${r.status} ${r.statusText}`);}
       const d=await r.json();
       if(d.error)throw new Error(d.error.message||'Airtable error');
@@ -987,12 +987,12 @@ window.PREDICTOR_DATA={"milestones":[30,21,14,10,7,5,4,3,2,1,0],"periods":{"all"
     errEl.style.display='none';
     btn.innerHTML='<span class="spinner"></span>Connecting…';
     btn.disabled=true;
-    localStorage.setItem(TOKEN_KEY,token);
+    localStorage.setItem(PASS_KEY,token);
     try{
       S.records=await fetchAll();S.fetchedAt=new Date();
       showDashboard();render();
     }catch(e){
-      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(PASS_KEY);
       errEl.textContent=e.message;errEl.style.display='';
       btn.innerHTML='Connect';btn.disabled=false;
     }
@@ -1007,7 +1007,7 @@ window.PREDICTOR_DATA={"milestones":[30,21,14,10,7,5,4,3,2,1,0],"periods":{"all"
   }
 
   function disconnect(){
-    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(PASS_KEY);
     S={records:[],view:'month',month:'2026-06',fetchedAt:null};
     document.getElementById('dashboard-view').style.display='none';
     document.getElementById('connect-view').style.display='';
@@ -1049,7 +1049,7 @@ window.PREDICTOR_DATA={"milestones":[30,21,14,10,7,5,4,3,2,1,0],"periods":{"all"
 
   document.getElementById('token-input').addEventListener('keydown',e=>{if(e.key==='Enter')doConnect();});
   window.addEventListener('load',()=>{
-    const saved=localStorage.getItem(TOKEN_KEY);
+    const saved=localStorage.getItem(PASS_KEY);
     if(saved){document.getElementById('token-input').value=saved;doConnect();}
   });
 </script>
