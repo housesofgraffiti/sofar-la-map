@@ -200,7 +200,7 @@
       <button class="seg-btn active" id="seg-month" onclick="setView('month')">Month</button>
       <button class="seg-btn" id="seg-all" onclick="setView('all')">All LA</button>
     </div>
-    <input type="month" class="month-input" id="month-input" value="2026-06" oninput="setMonth(this.value)">
+    <input type="month" class="month-input" id="month-input" oninput="setMonth(this.value)">
     <div class="spacer"></div>
     <button class="btn" id="hidden-toggle-btn" style="display:none;font-size:11px" onclick="toggleShowHidden()"></button>
     <span class="count-label" id="count-label"></span>
@@ -256,7 +256,9 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
   const PASS_KEY='sofar_dash_pass';
   const HIDDEN_KEY='sofar_hidden_ids';
   const F={date:'Show Date',city:'City',venue:'Venue Name',tickets:'Tickets Sold',cap:'Tickets Available',revenue:'USD Revenue',nbhd:'Neighborhood Cache'};
-  let S={records:[],view:'month',month:'2026-06',fetchedAt:null,showHidden:false};
+  function currentMonthStr(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+  const DEFAULT_MONTH=currentMonthStr();
+  let S={records:[],view:'month',month:DEFAULT_MONTH,fetchedAt:null,showHidden:false};
   let hiddenIds=new Set(JSON.parse(localStorage.getItem(HIDDEN_KEY)||'[]'));
 
   // Revenue override lookup — Airtable's USD Revenue field isn't auto-synced (only
@@ -1219,7 +1221,7 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
 
   function disconnect(){
     localStorage.removeItem(PASS_KEY);
-    S={records:[],view:'month',month:'2026-06',fetchedAt:null};
+    S={records:[],view:'month',month:DEFAULT_MONTH,fetchedAt:null};
     document.getElementById('dashboard-view').style.display='none';
     document.getElementById('connect-view').style.display='';
     document.getElementById('refresh-btn').style.display='none';
@@ -1260,6 +1262,7 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
 
   document.getElementById('token-input').addEventListener('keydown',e=>{if(e.key==='Enter')doConnect();});
   window.addEventListener('load',()=>{
+    document.getElementById('month-input').value=DEFAULT_MONTH;
     const saved=localStorage.getItem(PASS_KEY);
     if(saved){document.getElementById('token-input').value=saved;doConnect();}
   });
