@@ -263,12 +263,16 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
   // Tickets Sold / Tickets Available / Venue Name carry the "DO NOT EDIT" one-way CP
   // sync). If a show's Airtable Event ID has a fresher Metabase figure, use it.
   function revenueFor(f){
+    // Airtable's USD Revenue now syncs, so prefer the live field. Fall back to the
+    // manual override only when the live field is blank/zero (older frozen figures).
+    const live=Number(f&&f[F.revenue])||0;
+    if(live>0)return live;
     const eid=f&&f['Event ID'];
     if(eid!=null&&window.REVENUE_OVERRIDE){
       const key=String(eid);
       if(Object.prototype.hasOwnProperty.call(window.REVENUE_OVERRIDE,key))return window.REVENUE_OVERRIDE[key];
     }
-    return Number(f&&f[F.revenue])||0;
+    return 0;
   }
 
   // ── Predictor (reads predictor_data.js; safe no-op if absent) ──
@@ -332,6 +336,13 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
       }
       if(lean==='early'){loTix=early;hiTix=typ;}else{loTix=typ;hiTix=late;}
     }
+    // Anchor the range on the room's real draw distribution so it stays honest-wide
+    // without broken lows: low never below tickets sold or the venue's 25th-pct draw,
+    // high never below its typical (median) draw. Fixes both the cratered low (Rosenthal
+    // 16) and the pessimistic collapse it would otherwise cause far out.
+    loTix=Math.max(loTix,tix,prior.lo||0);
+    hiTix=Math.max(hiTix,prior.med||0,loTix+Math.round((prior.med||0)*0.15));
+    if(hiTix<loTix)hiTix=loTix;
     let sellout=false;
     if(cap>0){if(hiTix>=cap){hiTix=cap;sellout=true;}if(loTix>cap)loTix=cap;}
     if(loTix>hiTix){const t=loTix;loTix=hiTix;hiTix=t;}
