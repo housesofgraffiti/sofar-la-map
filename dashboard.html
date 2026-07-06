@@ -205,6 +205,10 @@
     <button class="btn" id="hidden-toggle-btn" style="display:none;font-size:11px" onclick="toggleShowHidden()"></button>
     <span class="count-label" id="count-label"></span>
   </div>
+  <div class="toolbar" style="margin-top:-6px;gap:6px">
+    <span style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-right:2px">Quick adjust</span>
+    <div id="sales-adj" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center"></div>
+  </div>
   <div class="table-wrap">
     <table>
       <thead>
@@ -386,6 +390,18 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
     }).join('');
   }
   function fcToggleAdj(id){window.FC_ADJ[id]=!window.FC_ADJ[id];const el=document.getElementById('fc-adj');if(el)el.innerHTML=fcAdjHTML();fcRender();}
+  // Sales-tab quick adjust — same presets, applied across every projection in the table
+  // for a fast "what if" snapshot (e.g. a World Cup weekend). Separate state from Forecast.
+  window.SALES_ADJ=window.SALES_ADJ||{};
+  function salesAdjMult(){return FC_ADJUSTMENTS.reduce((m,a)=>window.SALES_ADJ[a.id]?m*a.mult:m,1);}
+  function salesAdjHTML(){
+    const chips=FC_ADJUSTMENTS.map(a=>{const on=!!window.SALES_ADJ[a.id];
+      return `<button onclick="salesToggleAdj('${a.id}')" style="cursor:pointer;padding:3px 9px;border-radius:999px;font-family:inherit;font-size:11px;border:1px solid ${on?'var(--amber)':'var(--border2)'};background:${on?'var(--amber-light)':'var(--bg)'};color:var(--text)">${a.label} ×${a.mult}</button>`;}).join('');
+    const m=salesAdjMult();
+    const note=m!==1?`<span style="font-size:11px;color:var(--amber)">all projections ×${m.toFixed(2)}</span>`:`<span style="font-size:11px;color:var(--muted)">tap to preview a factor across all shows</span>`;
+    return chips+note;
+  }
+  function salesToggleAdj(id){window.SALES_ADJ[id]=!window.SALES_ADJ[id];render();}
   function fcProject(sel,dow,days,sold,cap){
     if(!PD)return null;
     let prior,klass='typical',basis,vobj=null;
@@ -1089,6 +1105,7 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
   // ── Table render ──────────────────────────────────────────
   function render(){
     const{records,view,month,fetchedAt}=S;
+    {const sa=document.getElementById('sales-adj');if(sa)sa.innerHTML=salesAdjHTML();}
     const sorted=[...records].sort((a,b)=>(a.fields[F.date]||'').localeCompare(b.fields[F.date]||''));
     const visible=sorted.filter(r=>!hiddenIds.has(r.id));
     const totTix=visible.reduce((a,r)=>a+(Number(r.fields[F.tickets])||0),0);
@@ -1176,7 +1193,8 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
         const isHidden=hiddenIds.has(r.id);
         const isLast=ri===rowsToShow.length-1;
         if(!isHidden)totCap+=cap;
-        const proj=!isHidden?projectShow(r.fields):null;
+        let proj=!isHidden?projectShow(r.fields):null;
+        if(proj){const sMult=salesAdjMult();if(sMult!==1){const sc=x=>{let y=Math.round(x*sMult);if(cap>0)y=Math.min(y,cap);return y;};proj={...proj,loTix:sc(proj.loTix),hiTix:sc(proj.hiTix),loRev:Math.round(proj.loRev*sMult),hiRev:Math.round(proj.hiRev*sMult),sellout:cap>0&&Math.round(proj.hiTix*sMult)>=cap};}}
         if(proj){projLoT+=proj.loTix;projHiT+=proj.hiTix;projLoR+=proj.loRev;projHiR+=proj.hiRev;}
 
         let badge;
