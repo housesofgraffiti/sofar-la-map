@@ -219,7 +219,7 @@
           <th class="r">Cap</th>
           <th class="r" title="Show runs at 30+ tickets sold">Status<br><span style="font-size:10px;letter-spacing:0;text-transform:none;font-weight:300">(runs ≥ 30)</span></th>
           <th class="r">Revenue</th>
-          <th class="r" title="Projected final tickets / revenue range, updates with sales">Projected</th>
+          <th class="r" title="Tap any projection to adjust it for that show">Projected<br><span style="font-size:9px;letter-spacing:0;text-transform:none;font-weight:300;color:var(--amber)">tap to adjust ⇅</span></th>
           <th style="width:32px"></th>
         </tr>
       </thead>
@@ -353,13 +353,17 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
     if(loTix>hiTix){const t=loTix;loTix=hiTix;hiTix=t;}
     return {loTix,hiTix,loRev:Math.round(loTix*price),hiRev:Math.round(hiTix*price),sellout};
   }
-  function projCellHTML(p,adjusted){
+  function projCellHTML(p,adj){
     if(!p)return '<span style="color:var(--muted)">—</span>';
+    adj=adj||[];const on=adj.length>0;
     const tixStr=p.loTix===p.hiTix?`${p.loTix}`:`${p.loTix}–${p.hiTix}`;
     const revStr=p.loRev===p.hiRev?`$${p.loRev.toLocaleString()}`:`$${p.loRev.toLocaleString()}–$${p.hiRev.toLocaleString()}`;
-    const col=adjusted?'var(--amber)':'inherit';
-    const dot=adjusted?' <span style="font-size:8px;vertical-align:middle">●</span>':'';
-    return `<div style="font-weight:500;color:${col}">${tixStr}${dot}${p.sellout?' <span style="color:var(--amber);font-size:9px">SELLOUT</span>':''}</div><div style="font-size:11px;color:var(--muted)">${revStr}</div>`;
+    const col=on?'var(--amber)':'inherit';
+    // always-visible tap affordance (sliders glyph); amber when the show is adjusted
+    const icon=`<span style="font-size:11px;margin-left:6px;color:${on?'var(--amber)':'var(--border2)'}" title="Tap to adjust this show">⇅</span>`;
+    // category tag(s) when adjusted
+    const tag=on?`<div style="font-size:9px;color:var(--amber);margin-top:1px;letter-spacing:.02em">${adj.map(a=>a.short).join(' · ')}</div>`:'';
+    return `<div style="font-weight:500;color:${col}">${tixStr}${icon}${p.sellout?' <span style="color:var(--amber);font-size:9px">SELLOUT</span>':''}</div><div style="font-size:11px;color:var(--muted)">${revStr}</div>${tag}`;
   }
 
   // ── Tabs ──────────────────────────────────────────
@@ -380,11 +384,11 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
   // Manual adjustments — knowledge the statistical model can't have (competing events,
   // holidays, headliners). Applied as multipliers on top of the projection.
   const FC_ADJUSTMENTS=[
-    {id:'event',label:'Competing major event',mult:0.75},
-    {id:'holiday',label:'Holiday weekend',mult:0.85},
-    {id:'dayoff',label:'Day off next day',mult:1.15},
-    {id:'headliner',label:'Billed headliner',mult:1.25},
-    {id:'producer',label:'Producer-run show',mult:0.80}
+    {id:'event',label:'Competing major event',short:'Competing event',mult:0.75},
+    {id:'holiday',label:'Holiday weekend',short:'Holiday',mult:0.85},
+    {id:'dayoff',label:'Day off next day',short:'Day off',mult:1.15},
+    {id:'headliner',label:'Billed headliner',short:'Headliner',mult:1.25},
+    {id:'producer',label:'Producer-run show',short:'Producer',mult:0.80}
   ];
   window.FC_ADJ=window.FC_ADJ||{};
   function fcAdjHTML(){
@@ -410,6 +414,7 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
   window.ROW_ADJ=window.ROW_ADJ||{};
   function rowAdjMult(id){const r=window.ROW_ADJ[id];return r?FC_ADJUSTMENTS.reduce((m,a)=>r[a.id]?m*a.mult:m,1):1;}
   function rowAdjActive(id){const r=window.ROW_ADJ[id];return r?FC_ADJUSTMENTS.some(a=>r[a.id]):false;}
+  function rowAdjInfo(id){const r=window.ROW_ADJ[id];return r?FC_ADJUSTMENTS.filter(a=>r[a.id]):[];}
   function rowAdjPopHTML(id){
     const chips=FC_ADJUSTMENTS.map(a=>{const on=!!(window.ROW_ADJ[id]&&window.ROW_ADJ[id][a.id]);
       return `<button onclick="toggleRowAdj('${id}','${a.id}')" style="display:block;width:100%;text-align:left;cursor:pointer;margin:3px 0;padding:6px 9px;border-radius:7px;font-family:inherit;font-size:12px;border:1px solid ${on?'var(--amber)':'var(--border2)'};background:${on?'var(--amber-light)':'var(--bg)'};color:var(--text)">${on?'✓ ':''}${a.label} <span style="color:var(--muted)">×${a.mult}</span></button>`;}).join('');
@@ -1242,7 +1247,7 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
           <td class="r" style="color:var(--muted)">${!isHidden&&cap>0?cap.toLocaleString():'—'}</td>
           <td class="r">${!isHidden?badge:'—'}</td>
           <td class="r">${!isHidden&&rev>0?f$(rev):'—'}</td>
-          <td class="r">${!isHidden?`<span class="proj-cell" onclick="openRowAdj('${r.id}',event)" style="cursor:pointer" title="Adjust this show">${projCellHTML(proj,rowAdjActive(r.id))}</span>`:'—'}</td>
+          <td class="r">${!isHidden?`<span class="proj-cell" onclick="openRowAdj('${r.id}',event)" style="cursor:pointer" title="Tap to adjust this show">${projCellHTML(proj,rowAdjInfo(r.id))}</span>`:'—'}</td>
           <td style="padding:0 8px"><button class="hide-btn" onclick="${isHidden?'unhideRecord':'hideRecord'}('${r.id}')" title="${hideTitle}">${hideIcon}</button></td>
         </tr>`;
       });
