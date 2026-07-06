@@ -370,6 +370,22 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
     if(t==='pricing')renderPricing();
   }
   // ── Forecast: attendance predictor ──────────────────
+  // Manual adjustments — knowledge the statistical model can't have (competing events,
+  // holidays, headliners). Applied as multipliers on top of the projection.
+  const FC_ADJUSTMENTS=[
+    {id:'event',label:'Competing major event',mult:0.75},
+    {id:'holiday',label:'Holiday weekend',mult:0.85},
+    {id:'dayoff',label:'Day off next day',mult:1.15},
+    {id:'headliner',label:'Billed headliner',mult:1.25},
+    {id:'producer',label:'Producer-run show',mult:0.80}
+  ];
+  window.FC_ADJ=window.FC_ADJ||{};
+  function fcAdjHTML(){
+    return FC_ADJUSTMENTS.map(a=>{const on=!!window.FC_ADJ[a.id];
+      return `<button onclick="fcToggleAdj('${a.id}')" style="cursor:pointer;padding:6px 11px;border-radius:999px;font-family:inherit;font-size:12px;border:1px solid ${on?'var(--amber)':'var(--border2)'};background:${on?'var(--amber-light)':'var(--bg)'};color:var(--text)">${a.label} <span style="color:var(--muted)">×${a.mult}</span></button>`;
+    }).join('');
+  }
+  function fcToggleAdj(id){window.FC_ADJ[id]=!window.FC_ADJ[id];const el=document.getElementById('fc-adj');if(el)el.innerHTML=fcAdjHTML();fcRender();}
   function fcProject(sel,dow,days,sold,cap){
     if(!PD)return null;
     let prior,klass='typical',basis,vobj=null;
@@ -409,16 +425,24 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
     const cap=parseInt(g('fc-cap').value)||0;
     const p=fcProject(sel,dow,days,sold,cap);
     if(!p){g('fc-out').innerHTML='No data loaded.';return;}
-    const rng=p.loTix===p.hiTix?`${p.loTix}`:`${p.loTix}–${p.hiTix}`;
-    const boxHTML=p.boxes.map(b=>{const on=b.k===p.head;return `<div style="flex:1;text-align:center;padding:9px 4px;border:1px solid ${on?'var(--amber)':'var(--border)'};border-radius:8px;background:${on?'var(--amber-light)':'var(--surface)'}">
+    // apply any active manual adjustments (multipliers stack)
+    const adjs=FC_ADJUSTMENTS.filter(a=>window.FC_ADJ&&window.FC_ADJ[a.id]);
+    const adjMult=adjs.reduce((m,a)=>m*a.mult,1);
+    const ap=x=>{let y=Math.round(x*adjMult);if(cap>0)y=Math.min(y,cap);return y;};
+    const loTix=ap(p.loTix),hiTix=ap(p.hiTix),sellout=cap>0&&hiTix>=cap;
+    const boxes=p.boxes.map(b=>{let val=Math.round(b.val*adjMult);const capped=cap>0&&val>=cap;if(cap>0)val=Math.min(val,cap);return {...b,val,capped};});
+    const rng=loTix===hiTix?`${loTix}`:`${loTix}–${hiTix}`;
+    const boxHTML=boxes.map(b=>{const on=b.k===p.head;return `<div style="flex:1;text-align:center;padding:9px 4px;border:1px solid ${on?'var(--amber)':'var(--border)'};border-radius:8px;background:${on?'var(--amber-light)':'var(--surface)'}">
       <div style="font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:${b.capped?'var(--coral)':'var(--muted)'}">${b.label}</div>
       <div style="font-size:22px;font-weight:500;color:var(--text)">${b.val}</div>
       <div style="font-size:9px;color:${b.capped?'var(--coral)':'var(--muted)'}">${b.capped?'sells out':(b.k==='late'||b.k==='big'?'high end':b.k==='early'||b.k==='light'?'low end':'most likely')}</div></div>`;}).join('');
+    const adjNote=adjs.length?`<div style="font-size:11px;color:var(--amber);margin-top:8px">adjusted: ${adjs.map(a=>a.label+' ×'+a.mult).join(' · ')} — combined ×${adjMult.toFixed(2)} on a base of ${p.loTix}–${p.hiTix}</div>`:'';
     g('fc-out').innerHTML=`
       <div style="font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)">Projected final${p.dayOf?' · day of show':''}</div>
-      <div style="font-size:34px;font-weight:500;color:var(--text);line-height:1.1;margin:2px 0 4px">${rng} <span style="font-size:14px;color:var(--muted)">tickets</span>${p.sellout?' <span style="font-size:11px;color:var(--coral)">SELLOUT</span>':''}</div>
+      <div style="font-size:34px;font-weight:500;color:var(--text);line-height:1.1;margin:2px 0 4px">${rng} <span style="font-size:14px;color:var(--muted)">tickets</span>${sellout?' <span style="font-size:11px;color:var(--coral)">SELLOUT</span>':''}</div>
       <div style="display:flex;gap:8px;margin:12px 0 8px">${boxHTML}</div>
-      <div style="font-size:11px;color:var(--muted)">basis: ${p.basis} · typical draw ${p.prior.med} (${p.prior.lo}–${p.prior.hi})</div>`;
+      <div style="font-size:11px;color:var(--muted)">basis: ${p.basis} · typical draw ${p.prior.med} (${p.prior.lo}–${p.prior.hi})</div>
+      ${adjNote}`;
   }
   function renderForecast(){
     if(!PD){document.getElementById('forecast-pane').innerHTML='<div style="padding:20px;color:var(--muted)">Predictor data not loaded.</div>';return;}
@@ -439,6 +463,8 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
           <div><div style="${lbl}">Tickets sold</div><input id="fc-sold" type="number" min="0" value="0" style="${inp}" oninput="fcRender()"></div>
           <div><div style="${lbl}">Room cap (optional)</div><input id="fc-cap" type="number" min="0" placeholder="blank=none" style="${inp}" oninput="fcRender()"></div>
         </div>
+        <div style="${lbl};margin-top:2px">Manual adjustments <span style="text-transform:none;letter-spacing:0">— your knowledge the model can't have</span></div>
+        <div id="fc-adj" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:2px">${fcAdjHTML()}</div>
         <div id="fc-out" style="margin-top:14px"></div>
       </div>
       <div style="${card};margin-top:16px">
