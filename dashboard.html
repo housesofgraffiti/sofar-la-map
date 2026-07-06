@@ -228,6 +228,7 @@
     </table>
   </div>
   </div><!-- /sales-pane -->
+  <div id="row-adj-pop" style="display:none;position:fixed;z-index:60;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.15);padding:10px;width:226px"></div>
   <div id="forecast-pane" style="display:none"></div>
   <div id="pl-pane" style="display:none"></div>
   <div id="breakdowns-pane" style="display:none"></div>
@@ -352,11 +353,13 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
     if(loTix>hiTix){const t=loTix;loTix=hiTix;hiTix=t;}
     return {loTix,hiTix,loRev:Math.round(loTix*price),hiRev:Math.round(hiTix*price),sellout};
   }
-  function projCellHTML(p){
+  function projCellHTML(p,adjusted){
     if(!p)return '<span style="color:var(--muted)">—</span>';
     const tixStr=p.loTix===p.hiTix?`${p.loTix}`:`${p.loTix}–${p.hiTix}`;
     const revStr=p.loRev===p.hiRev?`$${p.loRev.toLocaleString()}`:`$${p.loRev.toLocaleString()}–$${p.hiRev.toLocaleString()}`;
-    return `<div style="font-weight:500">${tixStr}${p.sellout?' <span style="color:var(--amber);font-size:9px">SELLOUT</span>':''}</div><div style="font-size:11px;color:var(--muted)">${revStr}</div>`;
+    const col=adjusted?'var(--amber)':'inherit';
+    const dot=adjusted?' <span style="font-size:8px;vertical-align:middle">●</span>':'';
+    return `<div style="font-weight:500;color:${col}">${tixStr}${dot}${p.sellout?' <span style="color:var(--amber);font-size:9px">SELLOUT</span>':''}</div><div style="font-size:11px;color:var(--muted)">${revStr}</div>`;
   }
 
   // ── Tabs ──────────────────────────────────────────
@@ -402,6 +405,28 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
     return chips+note;
   }
   function salesToggleAdj(id){window.SALES_ADJ[id]=!window.SALES_ADJ[id];render();}
+  // Per-show adjust — tap a projected cell to flip factors for that one show.
+  // Stacks on top of the global Quick adjust bar.
+  window.ROW_ADJ=window.ROW_ADJ||{};
+  function rowAdjMult(id){const r=window.ROW_ADJ[id];return r?FC_ADJUSTMENTS.reduce((m,a)=>r[a.id]?m*a.mult:m,1):1;}
+  function rowAdjActive(id){const r=window.ROW_ADJ[id];return r?FC_ADJUSTMENTS.some(a=>r[a.id]):false;}
+  function rowAdjPopHTML(id){
+    const chips=FC_ADJUSTMENTS.map(a=>{const on=!!(window.ROW_ADJ[id]&&window.ROW_ADJ[id][a.id]);
+      return `<button onclick="toggleRowAdj('${id}','${a.id}')" style="display:block;width:100%;text-align:left;cursor:pointer;margin:3px 0;padding:6px 9px;border-radius:7px;font-family:inherit;font-size:12px;border:1px solid ${on?'var(--amber)':'var(--border2)'};background:${on?'var(--amber-light)':'var(--bg)'};color:var(--text)">${on?'✓ ':''}${a.label} <span style="color:var(--muted)">×${a.mult}</span></button>`;}).join('');
+    const m=rowAdjMult(id);
+    return `<div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">Adjust this show${m!==1?` · ×${m.toFixed(2)}`:''}</div>${chips}${m!==1?`<button onclick="clearRowAdj('${id}')" style="width:100%;margin-top:6px;padding:5px;border:none;background:none;color:var(--muted);font-size:11px;cursor:pointer">clear</button>`:''}`;
+  }
+  function openRowAdj(id,ev){
+    ev.stopPropagation();
+    window.ROW_ADJ[id]=window.ROW_ADJ[id]||{};
+    const pop=document.getElementById('row-adj-pop'); if(!pop)return;
+    pop.innerHTML=rowAdjPopHTML(id); pop.style.display='block';
+    const x=Math.min(ev.clientX,window.innerWidth-242), y=Math.min(ev.clientY+8,window.innerHeight-240);
+    pop.style.left=Math.max(8,x)+'px'; pop.style.top=Math.max(8,y)+'px';
+  }
+  function toggleRowAdj(id,fid){window.ROW_ADJ[id]=window.ROW_ADJ[id]||{};window.ROW_ADJ[id][fid]=!window.ROW_ADJ[id][fid];render();const pop=document.getElementById('row-adj-pop');if(pop)pop.innerHTML=rowAdjPopHTML(id);}
+  function clearRowAdj(id){delete window.ROW_ADJ[id];render();const pop=document.getElementById('row-adj-pop');if(pop)pop.style.display='none';}
+  document.addEventListener('click',e=>{const pop=document.getElementById('row-adj-pop');if(pop&&pop.style.display==='block'&&!pop.contains(e.target)&&!(e.target.closest&&e.target.closest('.proj-cell')))pop.style.display='none';});
   function fcProject(sel,dow,days,sold,cap){
     if(!PD)return null;
     let prior,klass='typical',basis,vobj=null;
@@ -1194,7 +1219,7 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
         const isLast=ri===rowsToShow.length-1;
         if(!isHidden)totCap+=cap;
         let proj=!isHidden?projectShow(r.fields):null;
-        if(proj){const sMult=salesAdjMult();if(sMult!==1){const sc=x=>{let y=Math.round(x*sMult);if(cap>0)y=Math.min(y,cap);return y;};proj={...proj,loTix:sc(proj.loTix),hiTix:sc(proj.hiTix),loRev:Math.round(proj.loRev*sMult),hiRev:Math.round(proj.hiRev*sMult),sellout:cap>0&&Math.round(proj.hiTix*sMult)>=cap};}}
+        if(proj){const sMult=salesAdjMult()*rowAdjMult(r.id);if(sMult!==1){const sc=x=>{let y=Math.round(x*sMult);if(cap>0)y=Math.min(y,cap);return y;};proj={...proj,loTix:sc(proj.loTix),hiTix:sc(proj.hiTix),loRev:Math.round(proj.loRev*sMult),hiRev:Math.round(proj.hiRev*sMult),sellout:cap>0&&Math.round(proj.hiTix*sMult)>=cap};}}
         if(proj){projLoT+=proj.loTix;projHiT+=proj.hiTix;projLoR+=proj.loRev;projHiR+=proj.hiRev;}
 
         let badge;
@@ -1217,7 +1242,7 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
           <td class="r" style="color:var(--muted)">${!isHidden&&cap>0?cap.toLocaleString():'—'}</td>
           <td class="r">${!isHidden?badge:'—'}</td>
           <td class="r">${!isHidden&&rev>0?f$(rev):'—'}</td>
-          <td class="r">${!isHidden?projCellHTML(proj):'—'}</td>
+          <td class="r">${!isHidden?`<span class="proj-cell" onclick="openRowAdj('${r.id}',event)" style="cursor:pointer" title="Adjust this show">${projCellHTML(proj,rowAdjActive(r.id))}</span>`:'—'}</td>
           <td style="padding:0 8px"><button class="hide-btn" onclick="${isHidden?'unhideRecord':'hideRecord'}('${r.id}')" title="${hideTitle}">${hideIcon}</button></td>
         </tr>`;
       });
