@@ -250,6 +250,7 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
 </script>
 <script>
   const PROXY='/.netlify/functions/airtable-proxy';
+  const PROXY_ADJ='/.netlify/functions/adjustments';
   const BASE='appFjmrBPpOKVSdpz';
   const TABLE='Events';
   const MONTHLY_GOAL=33000;
@@ -388,7 +389,9 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
     {id:'holiday',label:'Holiday weekend',short:'Holiday',mult:0.85},
     {id:'dayoff',label:'Day off next day',short:'Day off',mult:1.15},
     {id:'headliner',label:'Billed headliner',short:'Headliner',mult:1.25},
-    {id:'producer',label:'Producer-run show',short:'Producer',mult:0.80}
+    {id:'producer',label:'Producer-run show',short:'Producer',mult:0.80},
+    {id:'window',label:'Short sale window',short:'Short window',mult:0.75},
+    {id:'samearea',label:'Same-area repeat this week',short:'Same-area',mult:0.90}
   ];
   window.FC_ADJ=window.FC_ADJ||{};
   function fcAdjHTML(){
@@ -429,8 +432,23 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
     const x=Math.min(ev.clientX,window.innerWidth-242), y=Math.min(ev.clientY+8,window.innerHeight-240);
     pop.style.left=Math.max(8,x)+'px'; pop.style.top=Math.max(8,y)+'px';
   }
-  function toggleRowAdj(id,fid){window.ROW_ADJ[id]=window.ROW_ADJ[id]||{};window.ROW_ADJ[id][fid]=!window.ROW_ADJ[id][fid];render();const pop=document.getElementById('row-adj-pop');if(pop)pop.innerHTML=rowAdjPopHTML(id);}
-  function clearRowAdj(id){delete window.ROW_ADJ[id];render();const pop=document.getElementById('row-adj-pop');if(pop)pop.style.display='none';}
+  function toggleRowAdj(id,fid){window.ROW_ADJ[id]=window.ROW_ADJ[id]||{};if(window.ROW_ADJ[id][fid])delete window.ROW_ADJ[id][fid];else window.ROW_ADJ[id][fid]=true;saveRowAdj(id);render();const pop=document.getElementById('row-adj-pop');if(pop)pop.innerHTML=rowAdjPopHTML(id);}
+  function clearRowAdj(id){delete window.ROW_ADJ[id];saveRowAdj(id);render();const pop=document.getElementById('row-adj-pop');if(pop)pop.style.display='none';}
+  // shared persistence: load the team-wide adjustments on connect/refresh, save on change.
+  // falls back to this browser's localStorage if the shared store is unreachable.
+  async function loadRowAdj(){
+    const pass=localStorage.getItem(PASS_KEY);
+    try{
+      const r=await fetch(PROXY_ADJ,{headers:{'x-dash-pass':pass||''}});
+      if(r.ok){const d=await r.json();window.ROW_ADJ=(d&&typeof d==='object')?d:{};localStorage.setItem('sofar_row_adj',JSON.stringify(window.ROW_ADJ));return;}
+    }catch(e){}
+    try{window.ROW_ADJ=JSON.parse(localStorage.getItem('sofar_row_adj')||'{}');}catch(e){window.ROW_ADJ={};}
+  }
+  function saveRowAdj(id){
+    localStorage.setItem('sofar_row_adj',JSON.stringify(window.ROW_ADJ));
+    const pass=localStorage.getItem(PASS_KEY);
+    fetch(PROXY_ADJ,{method:'POST',headers:{'Content-Type':'application/json','x-dash-pass':pass||''},body:JSON.stringify({id,adj:window.ROW_ADJ[id]||{}})}).catch(()=>{});
+  }
   document.addEventListener('click',e=>{const pop=document.getElementById('row-adj-pop');if(pop&&pop.style.display==='block'&&!pop.contains(e.target)&&!(e.target.closest&&e.target.closest('.proj-cell')))pop.style.display='none';});
   function fcProject(sel,dow,days,sold,cap){
     if(!PD)return null;
@@ -1285,7 +1303,7 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
     btn.disabled=true;
     localStorage.setItem(PASS_KEY,token);
     try{
-      S.records=await fetchAll();S.fetchedAt=new Date();
+      S.records=await fetchAll();await loadRowAdj();S.fetchedAt=new Date();
       showDashboard();render();
     }catch(e){
       localStorage.removeItem(PASS_KEY);
@@ -1297,7 +1315,7 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
   async function doRefresh(){
     const btn=document.getElementById('refresh-btn');
     btn.textContent='…';btn.disabled=true;
-    try{S.records=await fetchAll();S.fetchedAt=new Date();render();}
+    try{S.records=await fetchAll();await loadRowAdj();S.fetchedAt=new Date();render();}
     catch(e){alert('Refresh failed: '+e.message);}
     btn.textContent='Refresh';btn.disabled=false;
   }
