@@ -12,11 +12,13 @@ exports.handler = async (event) => {
   };
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: cors, body: '' };
 
-  const GATE = process.env.Dash_Passcode;
-  const pass = event.headers['x-dash-pass'] || event.headers['X-Dash-Pass'];
-  if (GATE && pass !== GATE) {
-    return { statusCode: 401, headers: cors, body: JSON.stringify({ error: 'Invalid passcode' }) };
-  }
+  // ── GATE DISABLED ── temporary, authorized for a presentation. Reinstate by
+  // uncommenting the block below. Do not delete — this is meant to come back.
+  // const GATE = process.env.Dash_Passcode;
+  // const pass = event.headers['x-dash-pass'] || event.headers['X-Dash-Pass'];
+  // if (GATE && pass !== GATE) {
+  //   return { statusCode: 401, headers: cors, body: JSON.stringify({ error: 'Invalid passcode' }) };
+  // }
 
   let store;
   try {
