@@ -22,14 +22,15 @@ exports.handler = async (event) => {
       body: JSON.stringify({ error: { message: 'Server is missing CLAUDE_API_KEY' } }) };
   }
 
-  // Passcode gate
-  if (GATE) {
-    const given = event.headers['x-dash-pass'] || event.headers['X-Dash-Pass'];
-    if (given !== GATE) {
-      return { statusCode: 401, headers: cors,
-        body: JSON.stringify({ error: { message: 'Incorrect passcode' } }) };
-    }
-  }
+  // ── GATE DISABLED ── temporary, authorized for a presentation. Reinstate by
+  // uncommenting the block below. Do not delete — this is meant to come back.
+  // if (GATE) {
+  //   const given = event.headers['x-dash-pass'] || event.headers['X-Dash-Pass'];
+  //   if (given !== GATE) {
+  //     return { statusCode: 401, headers: cors,
+  //       body: JSON.stringify({ error: { message: 'Incorrect passcode' } }) };
+  //   }
+  // }
 
   let body;
   try { body = JSON.parse(event.body); }
