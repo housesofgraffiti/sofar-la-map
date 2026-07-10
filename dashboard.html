@@ -450,8 +450,10 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
     const pass=localStorage.getItem(PASS_KEY);
     try{
       const r=await fetch(PROXY_ADJ,{headers:{'x-dash-pass':pass||''}});
-      if(r.ok){const d=await r.json();window.ROW_ADJ=(d&&typeof d==='object')?d:{};localStorage.setItem('sofar_row_adj',JSON.stringify(window.ROW_ADJ));return;}
+      if(r.ok){const d=await r.json();window.ROW_ADJ=(d&&typeof d==='object')?d:{};try{localStorage.setItem('sofar_row_adj',JSON.stringify(window.ROW_ADJ));}catch(e){}return;}
     }catch(e){}
+    // shared store unreachable (e.g. Blobs not provisioned) — fall back silently to this
+    // browser's local copy. Never throws: an adjustments outage must never block login/refresh.
     try{window.ROW_ADJ=JSON.parse(localStorage.getItem('sofar_row_adj')||'{}');}catch(e){window.ROW_ADJ={};}
   }
   function saveRowAdj(id){
@@ -1313,8 +1315,9 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
     btn.disabled=true;
     localStorage.setItem(PASS_KEY,token);
     try{
-      S.records=await fetchAll();await loadRowAdj();S.fetchedAt=new Date();
+      S.records=await fetchAll();S.fetchedAt=new Date();
       showDashboard();render();
+      loadRowAdj().then(render).catch(()=>{}); // best-effort; never blocks or mislabels login
     }catch(e){
       localStorage.removeItem(PASS_KEY);
       errEl.textContent=e.message;errEl.style.display='';
@@ -1325,7 +1328,10 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
   async function doRefresh(){
     const btn=document.getElementById('refresh-btn');
     btn.textContent='…';btn.disabled=true;
-    try{S.records=await fetchAll();await loadRowAdj();S.fetchedAt=new Date();render();}
+    try{
+      S.records=await fetchAll();S.fetchedAt=new Date();render();
+      loadRowAdj().then(render).catch(()=>{}); // best-effort; a Blobs/adjustments outage must not surface as "Refresh failed"
+    }
     catch(e){alert('Refresh failed: '+e.message);}
     btn.textContent='Refresh';btn.disabled=false;
   }
