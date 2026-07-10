@@ -32,14 +32,16 @@ exports.handler = async (event) => {
       body: JSON.stringify({ error: { message: 'Server is missing AIRTABLE_TOKEN' } }) };
   }
 
-  // Passcode gate (checked on the server) — applies to both GET and PATCH
-  if (GATE) {
-    const given = event.headers['x-dash-pass'] || event.headers['X-Dash-Pass'];
-    if (given !== GATE) {
-      return { statusCode: 401, headers: cors,
-        body: JSON.stringify({ error: { message: 'Incorrect passcode' } }) };
-    }
-  }
+  // ── GATE DISABLED ── temporary, authorized for a presentation. Reinstate by
+  // uncommenting the block below. Do not delete — this is meant to come back.
+  // Applies to both GET and PATCH when active.
+  // if (GATE) {
+  //   const given = event.headers['x-dash-pass'] || event.headers['X-Dash-Pass'];
+  //   if (given !== GATE) {
+  //     return { statusCode: 401, headers: cors,
+  //       body: JSON.stringify({ error: { message: 'Incorrect passcode' } }) };
+  //   }
+  // }
 
   // ── PATCH: batch-update up to 10 records ──────────────────────────────
   if (event.httpMethod === 'PATCH') {
