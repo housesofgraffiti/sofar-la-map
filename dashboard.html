@@ -265,6 +265,10 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
   const BAR_MAX=50000;
   const MIN_RUN=30;
   const PASS_KEY='sofar_dash_pass';
+  // Gate removed on request: the dashboard now auto-connects using this stored value,
+  // so opening the link goes straight in. NOTE: this value is visible to anyone who views
+  // the page source — it is no longer a real secret. See chat for the security tradeoff.
+  const AUTO_PASS='MayorFlood33k';
   const HIDDEN_KEY='sofar_hidden_ids';
   const F={date:'Show Date',city:'City',venue:'Venue Name',tickets:'Tickets Sold',cap:'Tickets Available',revenue:'USD Revenue',nbhd:'Neighborhood Cache'};
   function currentMonthStr(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
@@ -1380,8 +1384,9 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
   document.getElementById('token-input').addEventListener('keydown',e=>{if(e.key==='Enter')doConnect();});
   window.addEventListener('load',()=>{
     document.getElementById('month-input').value=DEFAULT_MONTH;
-    const saved=localStorage.getItem(PASS_KEY);
-    if(saved){document.getElementById('token-input').value=saved;doConnect();}
+    localStorage.setItem(PASS_KEY,AUTO_PASS);
+    document.getElementById('token-input').value=AUTO_PASS;
+    doConnect();
   });
 </script>
 </body>
