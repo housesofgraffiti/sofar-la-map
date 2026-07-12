@@ -334,11 +334,12 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
     const seg=PD.periods.all.by_dow[dow];
     const spread=(seg&&seg.spread&&seg.spread.n>=8)?seg.spread:PD.periods.all.overall.spread;
     let loTix,hiTix;
-    if(du===0){
-      const d=(v&&v.dayof_med!=null)?{med:v.dayof_med,hi:v.dayof_hi}:(PD.dayof_dow&&PD.dayof_dow[dow])?PD.dayof_dow[dow]:(PD.dayof_overall||{med:50,hi:80});
-      const pr=sh=>Math.round(tix/(1-Math.min(Math.max(sh,0),80)/100));
-      loTix=pr(d.med);hiTix=pr(d.hi);
-    } else {
+    {
+      // Note: no special "day of show" case. The pace milestone at d=0 already resolves
+      // to ~100% (this is the last bucket by construction — see chat), so routing du=0
+      // through the same curve as every other day-count correctly yields final ≈ current
+      // sold. A prior version guessed a separate day-of formula off fields the predictor
+      // never populated (dayof_med/dayof_overall), which produced wildly inflated ranges.
       const pf=pk=>{const fr=Math.max(1,pdInterp(spread[pk],du));return Math.round(tix+(1-fr/100)*prior.med);};
       const early=pf('p80'),typ=pf('p50'),late=pf('p20');
       // live-pace lean: actual sold vs this venue's own norm (or the dow typical curve)
@@ -479,12 +480,12 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
     const seg=PD.periods.all.by_dow[dow];
     const spread=(seg&&seg.spread&&seg.spread.n>=8)?seg.spread:PD.periods.all.overall.spread;
     let boxes,loTix,hiTix,head;
-    if(days===0){
-      const d=(vobj&&vobj.dayof_med!=null)?{med:vobj.dayof_med,lo:vobj.dayof_lo,hi:vobj.dayof_hi}:(PD.dayof_dow&&PD.dayof_dow[dow])?PD.dayof_dow[dow]:(PD.dayof_overall||{med:50,lo:20,hi:80});
-      const pr=sh=>Math.round(sold/(1-Math.min(Math.max(sh,0),80)/100));
-      boxes=[{k:'light',label:'Light door',val:pr(d.lo)},{k:'typical',label:'Typical',val:pr(d.med)},{k:'big',label:'Big door',val:pr(d.hi)}];
-      loTix=pr(d.med);hiTix=pr(d.hi);head='typical';
-    }else{
+    {
+      // Note: no special "day of show" formula. The pace curve at d=0 already resolves
+      // to ~100% sold (last bucket by construction), so routing days=0 through the same
+      // logic as every other day-count correctly yields final ≈ current sold. The old
+      // day-of formula guessed off fields the predictor never actually populated
+      // (dayof_med/dayof_overall), which produced wildly inflated projections.
       const pf=pk=>{const fr=Math.max(1,pdInterp(spread[pk],days));return Math.round(sold+(1-fr/100)*prior.med);};
       const early=pf('p80'),typ=pf('p50'),late=pf('p20');
       boxes=[{k:'early',label:'Sells early',val:early},{k:'typical',label:'Typical',val:typ},{k:'late',label:'Runs late',val:late}];
