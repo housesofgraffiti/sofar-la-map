@@ -1,0 +1,18 @@
+// netlify/functions/snapshot-cron.js
+//
+// Scheduled wrapper. Runs the same logic as snapshot-sales.js once a day.
+// Scheduled functions can't be invoked over HTTP in production, which is why
+// the logic lives in snapshot-sales.js and this file just calls it.
+
+import { runSnapshot } from './snapshot-sales.js';
+
+export default async function handler() {
+  const result = await runSnapshot();
+  console.log('Scheduled snapshot:', JSON.stringify(result));
+  return new Response(JSON.stringify(result), {
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+// 15:00 UTC daily — 8am Pacific in summer, 7am in winter. Cron is always UTC.
+export const config = { schedule: '0 15 * * *' };
