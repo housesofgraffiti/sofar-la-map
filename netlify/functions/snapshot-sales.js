@@ -112,24 +112,24 @@ async function writeSnapshots(events, snapshotDate) {
   return rows.length;
 }
 
-export default async function handler() {
+export async function runSnapshot() {
   try {
     const snapshotDate = laToday();
     const events = await fetchUpcomingLaEvents();
     const written = await writeSnapshots(events, snapshotDate);
     console.log(`Snapshot ${snapshotDate}: wrote ${written} events`);
-    return new Response(
-      JSON.stringify({ ok: true, date: snapshotDate, events: written }),
-      { headers: { 'Content-Type': 'application/json' } }
-    );
+    return { ok: true, date: snapshotDate, events: written };
   } catch (err) {
     console.error('Snapshot failed:', err.message);
-    return new Response(
-      JSON.stringify({ ok: false, error: err.message }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    return { ok: false, error: err.message };
   }
 }
 
-// 8:00 AM Pacific-ish (15:00 UTC). Cron is always UTC.
-export const config = { schedule: '0 15 * * *' };
+// HTTP entry point. Visit this URL to run a snapshot on demand.
+export default async function handler() {
+  const result = await runSnapshot();
+  return new Response(JSON.stringify(result), {
+    status: result.ok ? 200 : 500,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
