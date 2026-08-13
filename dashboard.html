@@ -257,6 +257,8 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
 </script>
 <script>
   const PROXY='/.netlify/functions/airtable-proxy';
+  const PROXY_MB='/.netlify/functions/metabase-proxy';
+  let SRC='';   // which source the current rows came from (shown in the footer)
   const PROXY_ADJ='/.netlify/functions/adjustments';
   const BASE='appFjmrBPpOKVSdpz';
   const TABLE='Events';
@@ -1078,6 +1080,22 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
 
   async function fetchAll(){
     const pass=localStorage.getItem(PASS_KEY);
+    // Primary source: Metabase (the platform's own numbers). Airtable's sync from the
+    // platform lags and drops records — verified 2026-08-13, when Tiki Too 8/16 was
+    // 43/43 SOLD OUT in Metabase but 26 in Airtable, and the 8/13 Dead Lady Vintage
+    // show ($2,072) was missing from Airtable entirely.
+    // The proxy returns Airtable's {records:[{id,fields}]} shape, so everything
+    // downstream (field map, projections, per-show adjustments) is unchanged.
+    try{
+      const p=new URLSearchParams(S.view==='all'?{all:'1'}:{month:S.month});
+      const r=await fetch(`${PROXY_MB}?${p}`,{headers:{'x-dash-pass':pass}});
+      if(r.ok){
+        const d=await r.json();
+        if(!d.error&&Array.isArray(d.records)){SRC='Metabase';return d.records;}
+      }
+    }catch(e){}
+    // Fallback: Airtable, if the Metabase proxy is unreachable or not yet configured.
+    SRC='Airtable (fallback)';
     let all=[],offset=null;
     const formula=buildFormula();
     do{
@@ -1310,7 +1328,7 @@ window.REVENUE_OVERRIDE_UPDATED='2026-07-02';
       <td></td>
     </tr>`;
 
-    document.getElementById('footer-left').textContent=`Base: ${BASE} · Table: ${TABLE}`;
+    document.getElementById('footer-left').textContent=SRC?`Source: ${SRC}`:`Base: ${BASE} · Table: ${TABLE}`;
     document.getElementById('footer-right').textContent=fetchedAt?`Updated ${fetchedAt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`:'' ;
     document.getElementById('last-updated').textContent=fetchedAt?fetchedAt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}):'';
   }
